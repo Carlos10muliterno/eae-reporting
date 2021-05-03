@@ -1,3 +1,7 @@
+#Project files
+/tfm_grupo_3/settings.py
+/studies/keys.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
