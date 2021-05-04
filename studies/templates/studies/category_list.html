@@ -1,0 +1,40 @@
+{% extends 'pages/base.html' %}
+{% load static %}
+{% block title %}Páginas{% endblock %}
+{% block background %}{% load static %}{% static 'pages/img/studies-bg.jpg' %}{% endblock %}
+{% block content %}
+<main role="main">
+  <div class="container mb-4">
+    <!--Comprobamos si existen estudios-->
+    <h1>Estudios para las empresas: {{category.name}}</h1>
+    {% if not category %}
+      <div class="row mt-3">
+        <div class="col-md-9 mx-auto">
+          <h2 class="mb-4">No hay estudios en la base de datos, lo sentimos</h2>
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div class="col-md-9 mx-auto">
+          <a class="btn btn-primary btn-block" href="{% url  'estudios:create' %}">Crea tu primer estudio!</a>
+        </div>
+      </div>
+    {%endif%}
+    {% for estudio in category.get_estudios.all|dictsort:"id" reversed %}
+      <div class="row mt-3 mb-3">
+        <div class="col-md-9 mx-auto">
+          <a href="{% url 'estudios:estudio' estudio.id estudio.title|slugify %}" class="mb-4 text-center text-dark display-3">{{estudio.fintech}}</a>
+          <h3>{{estudio.title}}</h3>
+          <div>
+            <p>{{estudio.content|striptags|safe|truncatechars:"200"}}</p>
+            <p>
+                <a class="btn btn-warning btn-sm" href="{% url  'estudios:update' estudio.id %}">Editar información del estudio</a>
+                <a class="btn btn-danger btn-sm" href="{% url  'estudios:delete' estudio.id %}"> Borrar el estudio</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    
+  </div>
+</main>
+{% endblock %}

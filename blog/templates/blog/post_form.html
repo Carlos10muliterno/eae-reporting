@@ -1,0 +1,23 @@
+{% extends 'pages/base.html' %}
+{% load static %}
+{% block title %}Crear un nuevo post{% endblock %}
+{% block background %}{% load static %}{% static 'blog/img/blog-bg.jpg' %}{% endblock %}
+{% block content %}
+{% include 'blog/includes/ckeditor_loader.html'%}
+<main role="main">
+  <div class="container">
+    <div class="row mt-3 mb-5">
+      <div class="col-md-9 mx-auto">
+        <div>
+            <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+                    {{ form.as_p }}
+                <div class="text-center">
+                    <input type="submit" class="btn btn-primary btn-block" value="Crear post" />
+                </div>
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

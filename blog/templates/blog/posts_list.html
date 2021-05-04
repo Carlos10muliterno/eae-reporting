@@ -1,0 +1,93 @@
+{% extends 'pages/base.html' %}
+{% block background %}{% load static %}{% static 'blog/img/blog-bg.jpg' %}{% endblock %}
+{% load static %}
+<script type="text/javascript" src="{% static "ckeditor/ckeditor-init.js" %}"></script>
+<script type="text/javascript" src="{% static "ckeditor/ckeditor/ckeditor.js" %}"></script>
+<link href="{% static 'blog/css/custom_ckeditor.css' %}" rel="stylesheet">
+{% block title %}Perfiles{% endblock %}
+{% block content %}
+<style>.profile-avatar{float:left;width:4rem;height:4rem}.profile-data{padding-left:4.5rem;padding-top:.4rem;}</style>
+<main role="main">
+  <div class="container">
+    <div class="row mt-3">
+      <div class="col-md-9 mx-auto mb-5">
+        <h2>Posts</h2>
+        <div class="row">
+          {% load static %} 
+          {% for post in post_list %}
+            <section class="page-section cta mb-5">
+              <div class="container">              
+                <div class="row">
+                  <div class="col-xl-9 mx-auto">
+                    <div class="cta-innerv text-center rounded">
+                      <h2 class="section-heading mb-5">
+                        <a href= "{% url 'posts:post' post.id post.title|slugify %}"><span class="section-heading-upper centered">{{post.title}}</span></a>
+                        <br>
+                        <span class="section-heading-lower">{{post.published|date:"SHORT_DATE_FORMAT"}}</span>
+                      </h2>
+                      {% if post.image.url != null %}
+                      <p class="mb-0">
+                        <img class="mx-auto d-flex rounded img-fluid mb-3 mb-lg-0" src="{{post.image.url}}" alt="">
+                      </p>
+                      {%endif%}
+                      <div>
+                        <p class="mb-0 mbt">{{post.content|safe|truncatechars:"500"}}</p>
+                        
+                      </div>
+                      <p class="mb-0 mbt">
+                        <span class="section-heading-under">Publicado por <em><b>{{post.author}}</b></em> en 
+                        <em>
+                        {% for category in post.categories.all %}
+                            <a href="{% url 'posts:category' category.id %}" class="link">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                        </em>
+                      </p>
+                      {% if request.user.is_staff %}
+                          <p><a href="{% url 'posts:update' post.id %}">Editar</a>, <a href="{% url 'posts:delete' post.id %}">Eliminar</a></p>
+                        {% endif %}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </section>
+            {% if not forloop.last %}<hr> {% endif %}
+          {% endfor %}
+          
+        </div>
+        <!-- Menú de paginación -->
+          {% if is_paginated %}
+            <nav aria-label="Page navigation mt-3">
+              <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                  <li class="page-item ">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">&laquo;</a>
+                  </li>
+                {% endif %}
+                {% for i in paginator.page_range %}
+                  <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                  </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                  <li class="page-item ">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">&raquo;</a>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          {% endif %}
+      </div>
+
+    </div>
+  </div>
+</main>
+{% endblock %}

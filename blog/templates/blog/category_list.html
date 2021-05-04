@@ -1,0 +1,43 @@
+{% extends 'pages/base.html' %}
+
+{% block background %}{% load static %}{% static 'blog/img/blog-bg.jpg' %}{% endblock %}
+{% block title %}Blog{% endblock %}
+{% block content %}
+    {% load static %}
+    {% for post in category.get_posts.all %}
+     <section class="page-section cta">
+              <div class="container">              
+                <div class="row">
+                  <div class="col-xl-9 mx-auto">
+                    <div class="cta-innerv text-center rounded">
+                      <h2 class="section-heading mb-5">
+                        <a href= "{% url 'posts:post' post.id post.title|slugify %}"><span class="section-heading-upper">{{post.title}}</span></a><br>
+                        <span class="section-heading-lower">{{post.published|date:"SHORT_DATE_FORMAT"}}</span>
+                      </h2>
+                      {% if post.image.url != null %}
+                      <p class="mb-0">
+                        <img class="mx-auto d-flex rounded img-fluid mb-3 mb-lg-0" src="{{post.image.url}}" alt="">
+                      </p>
+                      {%endif%}
+                      <div>
+                        <p class="mb-0 mbt">{{post.content|safe|truncatechars:"500"}}</p>
+                        {% if request.user.is_staff %}
+                          <p><a href="{% url 'posts:update' post.id %}">Editar</a></p>
+                        {% endif %}
+                      </div>
+                      <p class="mb-0 mbt">
+                        <span class="section-heading-under">Publicado por <em><b>{{post.author}}</b></em> en 
+                        <em>
+                        {% for category in post.categories.all %}
+                            <a href="{% url 'posts:category' category.id %}" class="link mb-3">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                        </em>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            {% if not forloop.last %}<hr> {% endif %}
+    {% endfor %}
+{% endblock %}

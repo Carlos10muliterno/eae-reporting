@@ -1,0 +1,354 @@
+<!doctype html>
+  <html lang="es">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    <style type="text/css">
+      .widget .panel, .widget.panel {
+          border-bottom-width: 1px;
+          border-bottom-color: #cfd9db;
+          overflow: hidden;
+      }
+
+      .widget {
+          margin-bottom: 20px;
+      }
+
+      .panel {
+          position: relative;
+          border-width: 1px;
+          border-color: #cfd9db;
+          border-radius: 3px;
+          -webkit-box-shadow: 0 .0625rem .0625rem rgba(0,0,0,.05);
+          box-shadow: 0 .0625rem .0625rem rgba(0,0,0,.05);
+      }
+
+      .panel-body {
+          position: relative;
+      }
+
+      .mb0 {
+          margin-bottom: 0!important;
+      }
+
+      .text-info {
+          color: #22A7F0!important;
+      }
+
+      .list-table {
+          display: table;
+          table-layout: fixed;
+          width: 100%;
+          margin: 0;
+          padding: 0;
+      }
+
+      .list-table>li:first-child {
+          padding-left: 0;
+      }
+
+      .list-table>li {
+          display: table-cell;
+          table-layout: fixed;
+          vertical-align: middle;
+          width: auto;
+          padding: 0 5px;
+          padding-bottom: 10px;
+          }
+
+      .img-bordered-primary {
+          -webkit-box-shadow: 0 0 0 6px #fff,0 0 0 4px #446CB3;
+          box-shadow: 0 0 0 2px #fff,0 0 0 4px #446CB3;
+      }
+
+      .img-circle {
+          border-radius: 50%!important;
+      }
+      .img-fluid {
+        max-width: 100%;
+        height: auto;
+      }
+      .ellipsis {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+      }
+      .semibold {
+          font-weight: 600;
+      }
+      .nm {
+          margin: 0!important;
+      }
+      .text-left {
+        text-align: left !important;
+      }
+    </style>
+  </head>
+
+<!--
+CSS y HTML de los tweets obtenido de:
+https://www.bootdey.com/snippets/view/Latest-Tweet 
+-->
+<!--Pagina donde tenemos que crear el report-->
+<body>
+<main role="main">
+  <div class="container">
+   <!-- <img class = "img-fluid" src="data:image/png;base64,{{ carlos }}" alt="Falla"> -->
+    <div class="row mt-4">
+      <div class="col-md-12 mx-auto">
+        <h2 class="section-heading mb-4">{{estudio.title}}</h2>
+        <h4 class="section-heading mb-4">Empresa: {{estudio.fintech}}</h4>
+        <h4 class="section-heading mb-4">
+        {% for category in estudio.categories.all %}
+          {% if forloop.first %}Tipo de Empresa:{% endif %}
+          <!-- <a href="{% url 'estudios:category' category.id %}" class="link">{{category.name}} </a> -->
+          {{category.name}}
+          {% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        </h4>
+        <h2 class="section-heading mb-4">Descripción del estudio</h2>
+        <div>
+          {{estudio.content|safe}}
+          {% if request.user.is_staff %}
+            <p><a class="btn btn-warning btn-sm" href="{% url 'estudios:update' estudio.id %}">Editar titulo y descripción del estudio</a></p>
+          {% endif %}
+        </div>
+      </div>
+   </div>
+   {% if not estudio.success %}
+    <div class = "row mt-4">
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+          <h2>
+          Lo sentimos pero no hemos podido realizar el estudio que nos has pedido...
+          </h2>
+          <!-- https://giphy.com/gifs/crying-2WxWfiavndgcM -->
+          <img src="pages/img/sad.gif" class="img-fluid rounded mx-auto d-block" alt="Lo sentimos" >
+          <h4>
+          ¡Hemos pensado que te pueden interesar estudios sobre empresas de sectores similares!
+          </h4>
+        </div>
+        <hr>
+        <h2 class="col-xs-12 col-md-12 col-lg-12  mb0">
+        {% for category in estudio.categories.all %}
+          <a href="{% url 'estudios:category' category.id %}" class="link">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        </h2>
+    </div>
+   {% else %}
+   <h2>Img</h2>
+    <div class = "row mt-4">
+      <h2 class="section-heading mb-4">Estudio</h2>
+      <!--Mostramos la sección de google maps-->
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+        <p>En este informe podrá encontrar información detallada acerca de la empresa o producto <b>{{estudio.fintech}}</b> que ha sido seleccionada.<br>
+        Se ha procedido al análisis de los tweets de los últimos siete días y de las últimas reseñas obtenidas de google maps.<br>
+        Gracias a este informe será capaz de tener una idea general de la opinión de los clientes.</p>
+        <p><b>¡COMENZAMOS!</b></p>
+        
+      </div>
+      <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">Google Maps<i class="fa fa-globe pull-right"></i></h4>
+      <hr>
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+      <p>
+      Google maps recoge reseñas de todos y cada uno de los países, además es una plataforma que los usuarios frecuentan muy a menudo para saber las diferentes opiniones de los distintos usuarios.<br> 
+      A continuación te mostramos un mapa donde puedes ver desde que ciudades los usuarios han escrito las últimas reseñas recogidas y además comprobar la valoración que han adjudicado. 
+      </p>
+      </div class="col-xs-12 col-md-12 col-lg-12  mb0">
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0"> Earth map (Not working yet)
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph10 }}" alt="" />
+      </div>
+
+      <!--Mostramos los tweets-->
+      <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">Tweets relevantes<i class="fa fa-twitter text-info pull-right"></i></h4>
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+        <p>Twitter es la plataforma número uno para el descubrimiento, los usuarios buscan enterarse de todas la novedades y libremente dar su opinión. <br/><br/>
+        A través de la siguiente información le ayudaremos a conectarse con las personas más importantes para su empresa. <br/><br/>
+        Tras una búsqueda entre todos los tweets publicados hemos encontrado los tres más influyentes.<br/>
+        <b>Estos tres son los tweets que más Retweets, favoritos y Replies han recibido.</b></p>
+      </div>
+      <!--Inicio de la muestra de los tweets-->
+      {% for tweet in estudio.tweets.all %}
+        <div class="col-xs-12 col-md-4 col-lg-4 bootstrap snippets bootdeys ">
+          <div class="widget panel">
+            <div class="panel-body">
+              <hr>
+              <ul class="list-table">
+                <li style="width:80px; padding-left:10px;">
+                  {% if tweet.picture|length > 0 %}
+                    <img class="img-circle img-bordered-primary" src="{{tweet.picture}}" alt="" width="50px" height="50px">
+                  {% else %}
+                    <img class="img-circle img-bordered-primary" src="https://i.pinimg.com/originals/0c/3b/3a/0c3b3adb1a7530892e55ef36d3be6cb8.png" alt="" width="50px" height="50px" />
+                  {% endif %}
+                </li>
+                <li class="text-left">
+                  <h5 class="semibold ellipsis nm">{{tweet.name}}</h5>
+                  <small class="text-muted">@{{tweet.username}}</small>
+                </li>
+              </ul>
+            </div>
+        
+            <ul class="list-group">
+              <li class="list-group-item">
+                <p>Tweet</p>
+                <p class="nm">{{tweet.text|safe|linebreaks}}</p>
+                <small class="text-muted">Fecha del tweet: {{tweet.created|date:"SHORT_DATE_FORMAT"}}</small>
+                <p class="text-muted nm ">{{tweet.replies}} respuestas | {{tweet.retweets}} retweets | {{tweet.likes}} likes </p>
+                {% if tweet.pos_sen > 0 %}
+                  <p class="text-muted nm ">{{tweet.pos_sen|floatformat:2}}% sentimiento positivo</p>
+                {%endif%}
+                {% if tweet.neu_sen > 0 %}
+                  <p class="text-muted nm ">{{tweet.neu_sen|floatformat:2}}% sentimiento nuetro</p>
+                {%endif%}
+                {% if tweet.neg_sen > 0 %}  
+                  <p class="text-muted nm ">{{tweet.neg_sen|floatformat:2}}% sentimiento negativo</p>
+                {%endif%}
+              </li>
+            </ul>
+          </div>
+        </div>
+      {% endfor %}
+      <!--Fin de la muestra de los tweets-->
+
+      <!--Mostramos los datos de la primera gráfica, así como el análisis sobre el tono del computo general de los tweets-->
+      <div>
+      <p>
+      Además es importante saber la intención de cada una de las opiniones. Saber si los Tweets publicados tienen un carácter positivo, negativo o neutro. 
+      </p>
+      </div>
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0 text-center">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph1 }}" alt="" >
+      </div>
+      <div>
+      <p>Como puede observar el mayor porcentaje de los Tweets es:</p>
+      
+      {% if estudio.sen_predominant == "negative" %}
+        <p><b>NEGATIVO</b>, la opinión de los usuarios mayoritariamente es mala, tienen una sensación negativa acerca del producto</p>
+      {% elif estudio.sen_predominant == "neutral"  %}
+        <p><b>NEUTRAL</b>, la sensación que tienen los clientes no es ni positiva ni negativa, podríamos hablar de cierta indiferencia</p>
+        <hb>
+      {% elif estudio.sen_predominant == "positive"  %}
+        <p><b>POSITIVO</b>, la opinión de los usuarios mayoritariamente es buena, tienen una sensación positiva acerca del producto</p>
+        <hb>
+      {%else%}
+        <p>No hay un valor claro</p>
+      {% endif%}
+      </div>
+      <!--Fin del área de la primera gráfica-->
+
+      <!--Área de la segunda gráfica-->
+      <div>
+      <p>
+      Además de observar estos porcentajes se muestra a continuación la cantidad de tweets de cada sentimiento. Es importante saber la magnitud de los tweets para poder hacer una valoración correcta. 
+      </p>
+      </div>
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0 text-center">
+          <img  class = "img-fluid" src="data:image/png;base64,{{ estudio.graph2 }}" alt="">
+      </div>
+      
+      <!--Fin del ára de la segunda gráfica-->
+      
+      <!--Área de la tercera gráfica-->
+      <div>
+      <p>
+      Hacer diferentes segmentaciones de clientes es clave para el análisis de mercado. 
+      La información que nos proporciona Twitter nos permite poder hacer una segmentación a través de los idiomas en los que han sido escritos los tweets. 
+      Podrá analizar en qué idioma mayoritariamente son escritas las opiniones y sacar conclusiones geográficas según la controversia. 
+      </p>
+      </div>
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 mb0">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph3 }}" alt="">
+      </div>
+      
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 mb0">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph9 }}" alt="">
+      </div>
+      <!--Fin del ára de la tercera gráfica-->
+
+      <!--Área de la cuarta y quinta gráfica-->
+      <div>
+      <p>
+      Los hashtag, palabras repetidas, expresiones más utilizadas, nos dan una primera impresión de los sentimientos que pueden tener los clientes a primera vista. 
+      Se muestran a continuación las palabras más repetidas tanto en inglés como en español. 
+      </p>
+      </div>
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 mb0">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph4 }}" alt="">
+      </div>
+      <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 mb0">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph5 }}" alt="">
+      </div>
+      <!--Fin del ára de la cuarta y quinta gráfica-->
+      
+      <!--Área de la sexta gráfica-->
+      <div>
+      <p>
+      Otra de las informaciones que te ofrecemos es la media de RT, favortios y replies según sean los tweets positivos negativos o neutros. 
+      </p>
+      </div>
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0 text-center">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph6 }}" alt="">
+      </div>
+      <!--Fin del ára de la sexta gráfica-->
+
+      <!--Área de la séptima gráfica-->
+      <div>
+      <p>Puede observar por término medio que tweets son los más influyentes, si los que tienen carácter positivo o los que tienen carácter negativo o neutro.<br> 
+      Qué tweets son los más retweeteados y cuales generan más hilos de conversaciones según su intención.<br>
+      Además se puede hacer una segmentación de mayor nivel, indicando por idioma cual es la media de cada tweets a nivel de sentimientos.</p>
+      <ul>
+        <li>Si la media es mayor de 0,5 los tweets en esa lengua son de carácter positivo</li>
+        <li>Si la media es menor de -0,5 los tweets en esa lengua son de carácter negativo</li>
+        <li>Si se encuentra entre ambos valores tiene carácter neutro en la lengua</li>
+      </ul>   
+      <p>Mostramos el gráfico de medias de los tweets en cada una de las lenguas que hay un número de tweets publicado considerado.</p>
+      </div>
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0 text-center">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph7 }}" alt="">
+      </div>
+      <!--Fin del ára de la séptima gráfica-->
+
+      
+      <!--Área de la octava gráfica-->
+      <div>
+      <p>
+      No tenemos info para esta gráfica
+      </p>
+      </div>
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0 text-center">
+          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph8 }}" alt="">
+      </div>
+      <!--Fin del ára de la octava gráfica-->
+
+      
+      
+
+      <div>
+      <p>
+        Tras haber investigado estas dos fuentes de información que son usadas por millones de personas, esperamos que la información haya sido útil para usted. 
+        Que se haya hecho una idea de la influencia del producto <b>{{estudio.fintech}}</b> y de la opinión de sus clientes.<br>
+      ¡Muchas gracias!
+
+      </p>
+      </div>
+        <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+          <h2>
+          Estudios sobre empresas similares
+          </h2>
+        </div>
+        <hr>
+        <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">
+        {% for category in estudio.categories.all %}
+          <a href="{% url 'posts:category' category.id %}" class="link">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        </h4>
+        
+      </div>
+    </div>
+    {% endif %}
+</main>
+</body>
+</html>

@@ -1,0 +1,100 @@
+{% extends 'pages/base.html' %}
+{% load static %}
+{% block title %}Estudios{% endblock %}
+{% block background %}{% load static %}{% static 'pages/img/studies-bg.jpg' %}{% endblock %}
+{% block content %}
+<main role="main">
+  <div class="container mb-4">
+    <!--Comprobamos si existen estudios-->
+    {% if 'fail' in request.GET %}
+            <div class="col-md-9 mx-auto">
+              <p class="alert alert-danger"role="alert"> No se ha podido crear el estudio... lo sentimos mucho</p>
+            </div>
+    {%endif%}
+    {% if estudio_list|length == 0 %}
+      <div class="row mt-3">
+        <div class="col-md-9 mx-auto">
+          <h2 class="mb-4">No hay estudios en la base de datos, lo sentimos</h2>
+        </div>
+      </div>
+      <div class="row mt-3">
+        <div >
+          <a class="btn btn-primary btn-block" href="{% url  'estudios:create' %}">Crea tu primer estudio!</a>
+        </div>
+      </div>
+    {%else%}
+      <div class="row mt-3 mb-3">
+        <div class="col-md-9 mx-auto">
+          <form class="d-flex" method="get" action="{% url 'estudios:estudios' %}">
+            <input class="form-control me-2" type="search" aria-label="Search" placeholder="Nombre del estudio o de la empresa para filtrar" name="filter">
+            <button class="btn" type="submit"><i class="fa fa-search"></i></button>
+          </form>
+        </div>
+      </div>
+    {%endif%}
+    {% for estudio in estudio_list|dictsort:"id" reversed %}
+      <div class="row mt-3 mb-3">
+        <div class="col-md-9 mx-auto">
+          <a href="{% url 'estudios:estudio' estudio.id estudio.title|slugify %}" class="mb-4 text-center text-dark display-3">{{estudio.fintech}}</a>
+          <h3>{{estudio.title}}</h3>
+          <div>
+            <p>{{estudio.content|striptags|safe|truncatechars:"200"}}</p>
+            <p>
+                <a class="btn btn-warning btn-sm" href="{% url  'estudios:update' estudio.id %}">Editar información del estudio</a>
+                <a class="btn btn-danger btn-sm" href="{% url  'estudios:delete' estudio.id %}"> Borrar el estudio</a>
+                <a class="btn btn-success btn-sm" href="{% url  'estudios:pdf' estudio.id %}"> Descargar en PDF</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    <!-- Menú de paginación -->
+    {% if is_paginated %}
+            <nav aria-label="Page navigation mt-3">
+              <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous and filter%}
+                  <li class="page-item ">
+                    <a class="page-link" href="?filter={{filter}}&page={{ page_obj.previous_page_number }}">&laquo;</a>
+                  </li>
+                {% elif page_obj.has_previous and not filter%}
+                  <li class="page-item ">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">&laquo;</a>
+                  </li>
+                {% endif %}
+                
+                {% for i in paginator.page_range %}
+                  {%if filter%}
+                    <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                      <a class="page-link" href="?filter={{filter}}&page={{ i }}">{{ i }}</a>
+                    </li>
+                  {%else%}
+                    <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                      <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                    </li>
+                  {%endif%}
+                {% endfor %}
+
+
+                {% if page_obj.has_next and filter %}
+                  <li class="page-item ">
+                    <a class="page-link" href="?filter={{filter}}&page={{ page_obj.next_page_number }}">&raquo;</a>
+                  </li>
+                {% elif page_obj.has_next and not filter %}
+                  <li class="page-item ">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+                  </li>
+                {% else %}
+                  <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">&raquo;</a>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+      {% endif %}
+  </div>
+</main>
+{% endblock %}

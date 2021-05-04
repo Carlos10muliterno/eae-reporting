@@ -1,0 +1,24 @@
+{% extends 'pages/base.html' %}
+{% load static %}
+{% block title %}Borrar página{% endblock %}
+{% block background %}{% load static %}{% static 'pages/img/studies-bg.jpg' %}{% endblock %}
+<!-- 
+Photo by <a href="https://unsplash.com/@adeolueletu?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Adeolu Eletu</a> on 
+<a href="https://unsplash.com/s/photos/fintechs?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash</a>
+-->
+{% block content %}
+<main role="main">
+  <div class="container">
+    <div class="row mt-3">
+      <div class="col-md-10 mx-auto">
+        <div>
+            <form action="" method="post">{% csrf_token %}
+                <p class="display-3 text-danger">¿Estás seguro de que quieres borrar "{{ object }}"?</p>
+                <input type="submit" class="btn btn-danger btn-block" value="Sí, borrar la página" />
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
