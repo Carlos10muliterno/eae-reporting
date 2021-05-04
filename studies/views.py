@@ -7,8 +7,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
 from .models import Estudio, Tweet, Review, Category
 from .forms import EstudioForm
-from .funciones import collectData, makePlot
-from .funciones_Xabi import collectData, dataTreatment
+from .funciones import collectData, dataTreatment
 from django import forms
 import time
 import sys
