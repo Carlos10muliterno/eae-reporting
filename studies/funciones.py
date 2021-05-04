@@ -1,99 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Apr 18 16:56:55 2021
+Created on Sat Apr 24 18:33:02 2021
 
-@author: Grupo 3
+@author: Xabi
 """
 
-
-def makePlot():
-    import matplotlib.pyplot as plt
-    import io
-    import urllib, base64
-    plt.switch_backend('agg')
-    plt.plot(range(10),'g^')
-    plt.rcParams.update({'font.size': 22})
-    fig = plt.gcf()
-    #convert graph into dtring buffer and then we convert 64 bit code into image
-    buf = io.BytesIO()
-    fig.savefig(buf,format='png')
-    buf.seek(0)
-    string = base64.b64encode(buf.read())
-    uri =  urllib.parse.quote(string)
-    return uri
-
-
-
-
-def collectData(busqueda,languaje):
-    from . import keys
-    import tweepy
-    import requests
-    import json
-    list_details = []
-    print('Llamamos a la funcion de busqueda')
-    list_details = get_reviews(busqueda)
-    print('Maps obtenido')
-    
-    
-    list_of_tweets = []
-    number_of_tweets = 3
-    
-    print('Llamamos a la funcion de twitter')
-    list_of_tweets, count = get_Tweets(busqueda,number_of_tweets,languaje)
-    print(count, ' Tweets obtenidos')
-    return list_details, list_of_tweets
-
-
-'''
-Función para obtener los tweets de twitter basado en el lenguaje y cantidad y el hastag
-Devuelve el numero de tweets conseguidos y una lista con todos los tweets
-'''
-
-def get_Tweets(busqueda,number_of_tweets,languaje):
-    import tweepy
-    ##--------Twitter API Call--------##
-    consumer_key = 'cLHFEXgvxQkk2oZMsCHv1M3kv'
-    consumer_secret = '5S6QDZ5MsPxEPyQA5lAK1gi4PI2VY4BpSoPPqQJd7Hof8CUUwI'
-    access_token = '1370390230348484612-AhsfvSHP32bAqjM6hzcgHiSiU2LIhW'
-    access_token_secret = 'yVzd0NDTirE86T6f9zlctvd7F6nL16S1wqn26QFs9nrn4'
-
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth,wait_on_rate_limit=True)
-    list_of_tweets = []
-    if busqueda[0] != '#':
-        busqueda = '#' + busqueda
-    count = 0
-    for tweet in tweepy.Cursor(api.search,q=busqueda,
-                            lang=languaje,count=number_of_tweets).items(number_of_tweets):
-        if 'https://t.co/' in tweet.text :
-            
-            #tweet.text = tweet.text[:-23]
-            print('Tiene url\n', tweet.text[:-23])
-            print('url\n',)
-        list_of_tweets.append(tweet)
-        count += 1
-    return list_of_tweets, count
-
-'''
-Función para obtener los datos de google maps
-'''
-
-
-
-
-def get_reviews(busqueda):
+def collectData(busqueda):
     from . import keys
     import requests
     import json
-    print(busqueda)
+    
+    ########################### Google Maps Data ##################################
+    
+    ##--------Variables and functions--------##
+    
     key = keys.oauth_maps()
     
     def connect_to_endpoint(url):
         return requests.request("GET", url)
     
-        
     list_countries = ["spain","USA","france","uk","italy","portugal","germany","canada","mexico","brasil","argentina"]
     list_place_ids = []
     
@@ -108,15 +33,9 @@ def get_reviews(busqueda):
     
     for country in list_countries:
     
-        search_url="https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=" \
-            + required_params["input"]+ " " + country \
-            +"&inputtype=" + required_params["inputtype"]  \
-            +"&fields="+ required_params["fields"] \
-            +"&key=" + required_params["api_key"]
+        search_url="https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input="+ required_params["input"]+ " " + country+"&inputtype=" + required_params["inputtype"]+"&fields="+ required_params["fields"]+"&key=" + required_params["api_key"]
         
         response=connect_to_endpoint(search_url)
-        # print(json.loads(response.text)['status'])
-        # print(type(json.loads(response.text)['status']))
         if json.loads(response.text)['status'] != "ZERO_RESULTS": 
             place_id = json.loads(response.text)['candidates'][0]['place_id']
             list_place_ids.append(place_id)
@@ -127,34 +46,84 @@ def get_reviews(busqueda):
     ##--------Place Details--------##
     
     list_details = []
-    print('Obteniendo los google maps')
-    
     required_params_details = {"fields": "name,geometry,rating,review,user_ratings_total",
                                 "api_key": key["API_key"]
                                 }
     for place_id in list_place_ids:
         
-        search_url_details="https://maps.googleapis.com/maps/api/place/details/json?place_id=" \
-            + place_id +"&fields=" + required_params_details["fields"] \
-            + "&key=" + required_params_details["api_key"]
+        search_url_details="https://maps.googleapis.com/maps/api/place/details/json?place_id="+ place_id +"&fields=" + required_params_details["fields"] + "&key=" + required_params_details["api_key"]
         
         response_details=connect_to_endpoint(search_url_details)
         if json.loads(response_details.text)['status'] == "OK":
             list_details.append(json.loads(response_details.text)['result'])
     
-    return list_details
+    # Eliminamos registros que no tengan la palabra deseada
+    
+    list_details = [item for item in list_details if busqueda in item['name'].lower()]
+        
+       
+    ########################## Twitter data #####################################
+    
+    ##--------Variables and functions--------##
+        
+    keys_twitter = keys.oauth()
+        
+    bearer_token    = keys_twitter["bearer_token"]
+    ntweets         = 100
+    count           = 0 
+      
+    def create_headers(bearer_token):
+        headers = {"Authorization": "Bearer {}".format(bearer_token)}
+        return headers
+    
+    
+    def connect_to_endpoint_twitter(url, headers):
+        response = requests.request("GET", url, headers=headers)
+        #print(response.status_code)
+        if response.status_code != 200:
+            raise Exception(response.status_code, response.text)
+        return response.json()
+    
+    
+    ##--------Twitter API Call--------##
+    
+    headers = create_headers(bearer_token)
+    list_of_tweets = []
+    list_of_authors = []
+    
+    while (count<1500):
+        if count == 0:
+            request_url     = "https://api.twitter.com/2/tweets/search/recent?query="+ busqueda + "&tweet.fields=" + "created_at,text,public_metrics,lang,geo"+"&max_results=" + str(ntweets) +"&expansions=author_id&user.fields=name,username,profile_image_url"
+            json_response_twitter = connect_to_endpoint_twitter(request_url, headers)
+            for tweet in json_response_twitter['data']:    
+                list_of_tweets.append(tweet)
+            for author in json_response_twitter['includes']['users']:
+                list_of_authors.append(author)
+            count += ntweets
+            
+            
+        elif count < 1500:
+            request_url     = "https://api.twitter.com/2/tweets/search/recent?query="+ busqueda + "&tweet.fields=" + "created_at,text,public_metrics,lang,geo"+ "&max_results=" + str(ntweets)+"&expansions=author_id&user.fields=name,username,profile_image_url" + "&next_token="+ json_response_twitter['meta']['next_token']
+            json_response_twitter = connect_to_endpoint_twitter(request_url, headers)
+            for tweet in json_response_twitter['data']:    
+                list_of_tweets.append(tweet)
+            for author in json_response_twitter['includes']['users']:
+                list_of_authors.append(author)
+            count += ntweets
+
+    return list_details, list_of_tweets, list_of_authors
 
 
+def dataTreatment(data_googlemaps,data_twitter,autores):    
 
-
-def treatment(data_googlemaps,data_twitter):    
     import json
     import sys, os
     from nltk.sentiment import SentimentIntensityAnalyzer
-        
+    # import nltk
+    
     import pandas as pd
     import gmaps
-    import keys
+    from . import keys
     
     from bokeh.io import show
     from bokeh.plotting import gmap
@@ -164,36 +133,24 @@ def treatment(data_googlemaps,data_twitter):
     
     import numpy as np
     from geopy.geocoders import Nominatim
+    import matplotlib.pyplot as plt
     
     import nltk
+    # nltk.download('vader_lexicon')
+    # nltk.download('punkt')
+    nltk.download('stopwords')
+    
     from nltk import tokenize
     from nltk.tokenize import word_tokenize, sent_tokenize
     from nltk.corpus import stopwords
     from nltk.probability import FreqDist
-    import matplotlib.pyplot as plt
     
+    import io
+    import urllib, base64
     
-    
+    plt.switch_backend('agg')
     df_googlemaps= pd.DataFrame(data_googlemaps)
-    df_twitter= pd.DataFrame(data_twitter) 
-    
-    # Eliminamos colummnas innecesarias del dataframe y renombramos
-    df_googlemaps.rename(columns={'name': 'Name',
-                                  'rating': 'Rating',
-                                  'reviews': 'Reviews',
-                                  'user_ratings_total': 'Total_Ratings',
-                                  'geometry.location.lat':'Latitude',
-                                  'geometry.location.lng':'Longitud',
-                                  },inplace=True)
-    
-    df_twitter.rename(columns={ 'lang': 'Lang',
-                                'text': 'Tweet',
-                                'public_metrics.like_count': 'Likes',
-                                'public_metrics.quote_count': 'Quotes',
-                                'public_metrics.reply_count':'Replies',
-                                'public_metrics.retweet_count':'Retweets',
-                                'geo.place_id':'Place_id'
-                                },inplace=True)
+    df_twitter_v0= pd.DataFrame(data_twitter) 
     
     latitud = []
     longitud = []
@@ -204,24 +161,40 @@ def treatment(data_googlemaps,data_twitter):
     df_googlemaps['Latitud'] = latitud
     df_googlemaps['Longitud'] = longitud
     
-    likes = []
-    replies = []
-    retweets = []
-    quotes = []
-    for row in range(len(df_twitter)):
-        retweets.append(df_twitter['public_metrics'][row]['retweet_count'])
-        replies.append(df_twitter['public_metrics'][row]['reply_count'])
-        likes.append(df_twitter['public_metrics'][row]['like_count'])
-        quotes.append(df_twitter['public_metrics'][row]['quote_count'])
+    # Eliminamos colummnas innecesarias del dataframe y renombramos
+    df_googlemaps.rename(columns={'name': 'Name',
+                                  'rating': 'Rating',
+                                  'reviews': 'Reviews',
+                                  'user_ratings_total': 'Total_Ratings',
+                                  },inplace=True)
     
-    df_twitter['Retweets'] = retweets
-    df_twitter['Likes'] = likes
-    df_twitter['Quotes'] = quotes
-    df_twitter['Replies'] = replies
+    df_twitter_v0.rename(columns={ 'lang': 'Lang',
+                                'text': 'Tweet',
+                                'public_metrics.like_count': 'Likes',
+                                'public_metrics.quote_count': 'Quotes',
+                                'public_metrics.reply_count':'Replies',
+                                'public_metrics.retweet_count':'Retweets',
+                                'geo.place_id':'Place_id'
+                                },inplace=True)
+    # try:
+    #     df_googlemaps.drop(columns=['geometry.viewport.northeast.lat','geometry.viewport.northeast.lng','geometry.viewport.southwest.lat','geometry.viewport.southwest.lng'],axis=1,inplace=True)
+    # except:    
+    #     print('No google maps data')
         
+    # df_twitter = df_twitter_v0.drop_duplicates('Tweet', keep="first")
+    # df_twitter.reset_index(inplace=True, drop=False)
     
-    df_googlemaps.drop(columns=['geometry','Reviews'],axis=1,inplace=True)
-    df_twitter.drop(columns=['id','public_metrics','geo'],axis=1,inplace=True)
+    likes = []
+    rt = []
+    replies = []
+    for row in range(len(df_twitter_v0)):
+        rt.append(df_twitter_v0['public_metrics'][row]['retweet_count'])
+        likes.append(df_twitter_v0['public_metrics'][row]['like_count'])
+        replies.append(df_twitter_v0['public_metrics'][row]['reply_count'])
+        
+    df_twitter_v0['Likes']     = likes
+    df_twitter_v0['Retweets']  = rt
+    df_twitter_v0['Replies']   = replies
     
     # Pasamos los tweets por la libreria NLTK
     sia = SentimentIntensityAnalyzer()
@@ -230,142 +203,276 @@ def treatment(data_googlemaps,data_twitter):
     sentiments_neutral = []
     sentiments_compound = []
     
-    for row in range(len(df_twitter)):
-        sentiments_positive.append(sia.polarity_scores(df_twitter['Tweet'][row])['pos'])
-        sentiments_negative.append(sia.polarity_scores(df_twitter['Tweet'][row])['neg'])
-        sentiments_neutral.append(sia.polarity_scores(df_twitter['Tweet'][row])['neu'])
-        sentiments_compound.append(sia.polarity_scores(df_twitter['Tweet'][row])['compound'])
+    for row in range(len(df_twitter_v0)):
+        sentiments_positive.append(sia.polarity_scores(df_twitter_v0['Tweet'][row])['pos'])
+        sentiments_negative.append(sia.polarity_scores(df_twitter_v0['Tweet'][row])['neg'])
+        sentiments_neutral.append(sia.polarity_scores(df_twitter_v0['Tweet'][row])['neu'])
+        sentiments_compound.append(sia.polarity_scores(df_twitter_v0['Tweet'][row])['compound'])
     
-    df_twitter['Positive_sentiment']= sentiments_positive
-    df_twitter['Negative_sentiment']= sentiments_negative
-    df_twitter['Neutral_sentiment'] = sentiments_neutral
-    df_twitter['Compound']          = sentiments_compound
+    df_twitter_v0['Positive_sentiment']= sentiments_positive
+    df_twitter_v0['Negative_sentiment']= sentiments_negative
+    df_twitter_v0['Neutral_sentiment'] = sentiments_neutral
+    df_twitter_v0['Compound']          = sentiments_compound
     
     # list_reviews = df_googlemaps['Reviews'].tolist()
+    df_twitter = df_twitter_v0.drop_duplicates('Tweet', keep="first")   
+    df_twitter.reset_index(drop=True, inplace=True)
+
+    df_twitter['Author_name'] = "Anonimo"
+    df_twitter['Author_username'] = "Anonimo"
+    df_twitter['Author_image'] = "Not found"
     
-      
+    for row in range(len(df_twitter['author_id'])):
+        for _id in range(len(autores)):
+            if df_twitter['author_id'][row] == autores[_id]['id']:
+                df_twitter['Author_name'][row] = autores[_id]['name']
+                df_twitter['Author_username'][row] = autores[_id]['username']
+                df_twitter['Author_image'][row] = autores[_id]['profile_image_url']
+                    
+          
     # Creamos subset por idiomas [en,es,fr,de,it,pt,pl] en df_twitter
     df_twitter_en = df_twitter[df_twitter['Lang']=='en']
     df_twitter_es = df_twitter[df_twitter['Lang']=='es']
-    df_twitter_fr = df_twitter[df_twitter['Lang']=='fr']
-    df_twitter_de = df_twitter[df_twitter['Lang']=='de']
-    df_twitter_it = df_twitter[df_twitter['Lang']=='it']
-    df_twitter_pt = df_twitter[df_twitter['Lang']=='pt']
-    df_twitter_pl = df_twitter[df_twitter['Lang']=='pl']
+    # df_twitter_fr = df_twitter[df_twitter['Lang']=='fr']
+    # df_twitter_de = df_twitter[df_twitter['Lang']=='de']
+    # df_twitter_it = df_twitter[df_twitter['Lang']=='it']
+    # df_twitter_pt = df_twitter[df_twitter['Lang']=='pt']
+    # df_twitter_pl = df_twitter[df_twitter['Lang']=='pl']
     
     
-    #********CALCULO DE LOS 3 TWEETS MAS INFLUYENTES*************************************
+    ############################## Plot a map ######################################
+    
+    key = keys.oauth_maps()  
+    # initialize Nominatim API
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    
+    city = []
+    state = []
+    country = []
+    zipcode = []
+    
+    for row in range(len(df_googlemaps)):
+        # Latitude & Longitude input
+        Latitude = str(df_googlemaps['Latitud'][row])
+        Longitude = str(df_googlemaps['Longitud'][row])
+        
+        location = geolocator.reverse(Latitude+","+Longitude)
+          
+        address = location.raw['address']
+        city.append(address.get('city', ''))
+        state.append(address.get('state', ''))
+        country.append(address.get('country', ''))
+        zipcode.append(address.get('postcode'))
+    
+    df_googlemaps['City'] = city
+    df_googlemaps['State'] = state
+    df_googlemaps['Country'] = country
+    df_googlemaps['Zipcode'] = zipcode
+    
+    Radius = []
+    
+    for row in range(len(df_googlemaps)):
+        if df_googlemaps['City'][row] == '':
+            df_googlemaps['City'][row] = df_googlemaps['State'][row]
+    
+        if df_googlemaps['Total_Ratings'][row]>=0 and df_googlemaps['Total_Ratings'][row] <10:
+            pendiente=Radius.append(0.5*df_googlemaps['Total_Ratings'][row])
+            Radius.append(pendiente)
+        elif df_googlemaps['Total_Ratings'][row]>=10 and df_googlemaps['Total_Ratings'][row] <100:
+            pendiente=(1/18)*df_googlemaps['Total_Ratings'][row]+4.44
+            Radius.append(pendiente)
+        elif df_googlemaps['Total_Ratings'][row]>=100 and df_googlemaps['Total_Ratings'][row] <1000:
+            pendiente=(1/180)*df_googlemaps['Total_Ratings'][row]+9.44
+            Radius.append(pendiente)
+        elif df_googlemaps['Total_Ratings'][row]>=1000 and df_googlemaps['Total_Ratings'][row] <10000:
+            pendiente=(1/1800)*df_googlemaps['Total_Ratings'][row]+14.44
+            Radius.append(pendiente)
+        elif df_googlemaps['Total_Ratings'][row] >=10000:
+            pendiente=24
+            Radius.append(pendiente)
+            
+    Radius = list(filter(None, Radius))    
+    df_googlemaps['Radius'] = Radius        
+    
+    lat, lon = 0, 0
+    bokeh_width, bokeh_height = 1000,800
+    
+    gmaps.configure(api_key=key["API_key"])
+    
+    def plot(lat, lng, zoom=2, map_type='roadmap'):
+        gmap_options = GMapOptions(lat=lat, lng=lng, 
+                                    map_type=map_type, zoom=zoom)
+        
+        hover = HoverTool(
+            tooltips = [
+                ('Name', '@Name'),
+                ('City', '@City'),
+                ('Country', '@Country'),
+                ('Rating', '@Rating{0.0} stars'), 
+                ('Total_Ratings', '@Total_Ratings reviews'), 
+            ]
+        )
+        p = gmap(key["API_key"], gmap_options, title='Mundo', 
+                  width=bokeh_width, height=bokeh_height,tools=[hover,'reset','wheel_zoom','pan'])
+        
+        source = ColumnDataSource(df_googlemaps)
+        center = p.circle('Longitud', 'Latitud', size='Radius', alpha=0.5, color='red',source=source)
+        fig = plt.gcf()
+        #convert graph into dtring buffer and then we convert 64 bit code into image
+        buf = io.BytesIO()
+        fig.savefig(buf,format='png')
+        buf.seek(0)
+        string = base64.b64encode(buf.read())
+        uri_fig =  urllib.parse.quote(string)
+        return uri_fig
+    
+    uri_fig = plot(lat, lon)
+    
+    # fig = plt.gcf()
+    # #convert graph into dtring buffer and then we convert 64 bit code into image
+    # buf = io.BytesIO()
+    # fig.savefig(buf,format='png')
+    # buf.seek(0)
+    # string = base64.b64encode(buf.read())
+    # uri =  urllib.parse.quote(string)
+    # return uri
+    
+
+    #############################################################################
+    
+    #********CALCULO DE LOS 3 TWEETS MAS INFLUYENTES*******************************
     
     df_twitter['influence'] = df_twitter[['Likes', 'Replies', 'Retweets']].sum(axis=1)
     
-    df_twitter_mx= df_twitter.sort_values(by =['influence'], ascending=[False], ignore_index=True)
+    df_twitter_mx           = df_twitter.sort_values(by =['influence'], ascending=[False], ignore_index=True)
+    
+    df_twitter_3_most_important = df_twitter_mx[df_twitter_mx.index.isin([0,1,2])]
+    
+    #############################################################################
     
     
-    print(df_twitter_mx['Tweet'][0])
-    print(df_twitter_mx['influence'][0])
-    print(df_twitter_mx['Replies'][0])
-    print(df_twitter_mx['Likes'][0])
-    print(df_twitter_mx['Retweets'][0])
+    #***************  % DE TWEETS POS/NEG/NEUTROS    ******************************
     
+    percentage_positives    = (df_twitter[df_twitter['Compound']>0.5].count())['Compound']/(len(df_twitter))
+    percentage_negatives    = (df_twitter[df_twitter['Compound']<-0.5].count())['Compound']/(len(df_twitter))
+    percentage_neutrals     = 1-(percentage_positives+percentage_negatives)
     
+    #Ploteamos en un PIE?
+    etiquetas = ['Positive', 'Negative', 'Neutral']
+    porcentajes = [percentage_positives, percentage_negatives, percentage_neutrals]
+    explode = (0.1, 0.1, 0.1)
+    colors = ["red", "salmon", "mistyrose"]
     
-    print(df_twitter_mx['Positive_sentiment'][0])
-    print(df_twitter_mx['Negative_sentiment'][0])
-    print(df_twitter_mx['Neutral_sentiment'][0])
-    print(df_twitter_mx['Compound'][0])
-    
-    print(df_twitter_mx['Tweet'][1])
-    print(df_twitter_mx['influence'][1])
-    print(df_twitter_mx['Replies'][1])
-    print(df_twitter_mx['Likes'][1])
-    print(df_twitter_mx['Retweets'][1])
-    
-    
-    
-    print(df_twitter_mx['Positive_sentiment'][1])
-    print(df_twitter_mx['Negative_sentiment'][1])
-    print(df_twitter_mx['Neutral_sentiment'][1])
-    print(df_twitter_mx['Compound'][1])
-    
-    print(df_twitter_mx['Tweet'][2])
-    print(df_twitter_mx['influence'][2])
-    print(df_twitter_mx['Replies'][2])
-    print(df_twitter_mx['Likes'][2])
-    print(df_twitter_mx['Retweets'][2])
-    
-    
-    
-    print(df_twitter_mx['Positive_sentiment'][2])
-    print(df_twitter_mx['Negative_sentiment'][2])
-    print(df_twitter_mx['Neutral_sentiment'][2])
-    print(df_twitter_mx['Compound'][2])
-    
-    print(df_twitter['Compound'].mean())
-      #***************************************************************************
-    
-    neutro = 0
-    positivo = 0
-    negativo = 0
-    
-    for row in range(len(df_twitter)):
-        if  df_twitter['Compound'][row] >= 0.5 :
-        
-          positivo = positivo + 1
-        
-        else: 
-        
-            if df_twitter['Compound'][row]  <= -0.5 :
-            
-                negativo = negativo + 1
-            
-            else: 
-                neutro = neutro +1 
-            
-            pass
-    
-    porcentaje_positivo = positivo/(positivo + negativo + neutro)
-    porcentaje_negativo = negativo/(positivo + negativo + neutro)
-    porcentaje_neutro= neutro/(positivo + negativo + neutro)
-    
-    etiquetas = ['positive', 'negative', 'neutral']
-    porcentas = [positivo, negativo, neutro]
-    
-    #FIGURA 2
-    
-    plt.pie(porcentas, labels = etiquetas, autopct='%1.1f%%', shadow=True, startangle=90) 
-    
-    
+    plt.pie(porcentajes, labels = etiquetas, autopct='%1.2f%%', shadow=True, startangle=90, colors=colors,explode=explode) 
     
     plt.title("SENTIMENT ANALYSIS", 
-      fontdict={'family': 'serif', 
-        'color' : 'darkblue',
-        'weight': 'bold',
-        'size': 18})
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
     plt.legend()
-    plt.show()
+    #plt.show()
     
-    print(porcentaje_positivo)
-    print(porcentaje_negativo)
-    print(porcentaje_neutro)
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig1 =  urllib.parse.quote(string)
     
+    
+    #Ploteado como barras y con numero de tweets
+    
+    colors = ["red", "salmon", "mistyrose"]
+    ntweets = [percentage_positives*(len(df_twitter)), percentage_negatives*(len(df_twitter)), percentage_neutrals*(len(df_twitter))]
+    
+    fig, ax = plt.subplots()
+    ax.set_xlabel('Nº Tweets')
+    ax.set_ylabel('Sentiment')
+    # ax.set_title('Intent of tweets')
+    ax.barh(etiquetas, ntweets, color=colors)
+    plt.title("Sentiment of tweets", 
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
+    #plt.show()
+    
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig2 =  urllib.parse.quote(string)
+    
+    #############################################################################
+    
+    
+    #***********  N tweets por idioma  *************************
+    
+    # De los idiomas con más de 30 tweets
+    
+    df_lang = pd.DataFrame(df_twitter['Lang'].value_counts())
+    df_lang = df_lang[ df_lang.index != 'und' ]
+    df_lang = df_lang[ df_lang['Lang'] >= 20 ]
+    
+    colors = ["darkred", "firebrick", "indianred", "lightcoral","salmon", "mistyrose"]
+    
+    from iso_language_codes import language
+    
+    languages = []
+    for row in range(len(df_lang)):
+        try:
+            idioma = language(df_lang.index[row])
+            languages.append(idioma['Name'])
+        except:
+            languages.append(df_lang.index[row].capitalize())
+        
+        
+    fig, ax = plt.subplots()
+    ax.set_ylabel('Nº Tweets')
+    ax.set_xlabel('Languages')
+    def autolabel(rects):
+        for idx,rect in enumerate(bar_plot):
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                    df_lang['Lang'][idx],
+                    ha='center', va='bottom', rotation=0, color='darkred',weight='bold')
+    bar_plot  = ax.bar(languages, df_lang['Lang'], color=colors)
+    autolabel(bar_plot)
+    
+    limit = max(df_lang['Lang'])
+    plt.ylim(0,1.5*limit)
+    
+    plt.title("Tweets per language", 
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
+    #plt.show()
+    
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig3 =  urllib.parse.quote(string)
+    
+    
+    #############################################################################
+    
+    
+    #***********  Palabras más repetidas  *************************
     
     df_twitter_en.reset_index(inplace=True, drop=False)
     df_twitter_es.reset_index(inplace=True, drop=False)
-    df_twitter_fr.reset_index(inplace=True, drop=False)
-    
-    
-    #FIGURA 2
-    
-    influence = []
+    # influence = []
     lista1 = []
     lista2 = []
     filtered_sentence = []
-     
-    fig, ax = plt.subplots()
-    ax.set_ylabel('Nº Tweets')
-    ax.set_title('Intent of tweets')
-    plt.bar(etiquetas, porcentas)
-    plt.show()
     
     for line in range(len(df_twitter_en)):
         sent_tokenize(df_twitter_en['Tweet'][line])
@@ -374,14 +481,12 @@ def treatment(data_googlemaps,data_twitter):
         word_tokens = word_tokenize(df_twitter_en['Tweet'][line]) 
     
         for w in word_tokens: 
-          if w not in stop_words: 
-              filtered_sentence.append(w) 
-    
+              if w not in stop_words: 
+                filtered_sentence.append(w) 
+                
     lista1.extend(filtered_sentence)
     
     x=0 
-    
-    
     
     for i in range(0, len(lista1)):
         if len(lista1[x]) >= 3:
@@ -400,14 +505,22 @@ def treatment(data_googlemaps,data_twitter):
     #GRÁFICO 3
     
     plt.title("FRECUENCY OF ENGLISH WORDS", 
-      fontdict={'family': 'serif', 
-        'color' : 'darkblue',
-        'weight': 'bold',
-        'size': 18})
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
+    fdist.plot(10, cumulative=False, color= 'darkred')
     
-    fdist.plot(10, cumulative=False)
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig4 =  urllib.parse.quote(string)
     
-    #español
+    # In spanish
+    
     
     lista3 = []
     filtered_sentence2 = []
@@ -419,10 +532,10 @@ def treatment(data_googlemaps,data_twitter):
         len(stop_words)
         word_tokens = word_tokenize(df_twitter_es['Tweet'][line]) 
     
-    for w in word_tokens: 
-      if w not in stop_words: 
-          filtered_sentence2.append(w) 
-    
+        for w in word_tokens: 
+              if w not in stop_words: 
+                filtered_sentence2.append(w) 
+                
     lista3.extend(filtered_sentence2)
     
     x=0 
@@ -443,54 +556,148 @@ def treatment(data_googlemaps,data_twitter):
     #GRÁFICO 4
     
     plt.title("FRECUENCY OF SPANISH WORDS", 
-      fontdict={'family': 'serif', 
-        'color' : 'darkblue',
-        'weight': 'bold',
-        'size': 18})
-    
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
     
     fdist.tabulate(10, cumulative=False)
     
-    fdist.plot(10, cumulative=False)
+    fdist.plot(10, cumulative=False, color= 'darkred')
     
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig5 =  urllib.parse.quote(string)
     
     #############################################################################
     
-    ### CHI-SQUARED TEST ###
+    
+    #*************  Media de rt,favs,replies de los pos,neg,neu  *******************
+    
+    df_positives    = df_twitter[df_twitter['Compound']>0.5]
+    df_negatives    = df_twitter[df_twitter['Compound']<-0.5]
+    df_neutral      = df_twitter[df_twitter['Compound']>=-0.5]
+    df_neutral      = df_neutral[df_neutral['Compound']<=0.5]
+    
+    # medias = []
+    rt = []
+    fav = []
+    reply = []
+    
+    rt.append(df_positives['Retweets'].mean())
+    rt.append(df_negatives['Retweets'].mean())
+    rt.append(df_neutral['Retweets'].mean())
+    
+    fav.append(df_positives['Likes'].mean())
+    fav.append(df_negatives['Likes'].mean())
+    fav.append(df_neutral['Likes'].mean())
+    
+    reply.append(df_positives['Replies'].mean())
+    reply.append(df_negatives['Replies'].mean())
+    reply.append(df_neutral['Replies'].mean())
+    
+    medias = [rt,fav,reply]
+    
+    colors = ["firebrick", "indianred", "lightcoral"]
+    etiquetas = ['Positive', 'Negative', 'Neutral']
+    
+    
+    X = np.arange(3)
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,1,1])
+    ax.bar(X - 0.25, medias[0], color = colors[0], width = 0.25, label='Retweets')
+    ax.bar(X + 0.00, medias[1], color = colors[1], width = 0.25, label='Likes')
+    ax.bar(X + 0.25 , medias[2], color = colors[2], width = 0.25, label='Replies')
+    
+    plt.xticks(X, ('Positive', 'Negative', 'Neutral'))
+    ax.set_ylabel('Number of tweets')
+    ax.set_xlabel('Sentiment')
+    plt.legend()
+    
+    plt.title("Retweet,Likes and Reply counts", 
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
+    plt.grid()
+    #plt.show()
+    
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig6 =  urllib.parse.quote(string)
+    
+    #############################################################################
+    
+    
+    #*************  Media de compound de los tweets  *******************
+    
+    # df_compound = df_twitter[df_twitter['Compound']>0.5]        
+    
+    df_compound = df_twitter[df_twitter['Lang'].isin(df_lang.index.tolist())]
+    means = []
+    for idioma in df_lang.index.tolist():
+        mean = df_compound[df_compound['Lang']==idioma]['Compound'].mean()
+        means.append(mean)
+        
+    fig, ax = plt.subplots()
+    ax.set_ylabel('Compound mean')
+    ax.set_xlabel('Languages')
+        
+    markerline, stemlines, baseline = plt.stem(languages, means, linefmt='salmon',markerfmt='or')
+    markerline.set_markerfacecolor('darkred')
+    plt.setp(baseline, 'color', 'darkred', 'linewidth', 2)
+    
+    plt.title("Compound mean by language", 
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
+    #plt.show()
+    
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig7 =  urllib.parse.quote(string)
+    
+    #############################################################################
+    
+    
+    #************************  CHI squared test ******************************
+    
     from scipy.stats import chi2_contingency
     import seaborn as sns
-    import matplotlib.pyplot as plt
-    #%matplotlib inline #wrong sintax why?????
-    
     
     #creacion de una nueva columna con la clasificacion del sentimiento
     df_twitter['Sent'] = 0
-    
     
     #CHECK THE COMPOUND BINS FOR POS, NEG, AND NEU ARE OKAY
     #asignacion de valores a la columna de sentimiento
     for row in range(len(df_twitter)):
         if  df_twitter['Compound'][row] >= 0.5 :
-        
-          df_twitter['Sent'][row] = 'Positive'
-        
+            df_twitter['Sent'][row] = 'Positive'
         else: 
-        
             if df_twitter['Compound'][row]  <= -0.5 :
-            
                 df_twitter['Sent'][row] = 'Negative'
-            
             else: 
                 df_twitter['Sent'][row] = 'Neutral'
     
-    
-    
     #subset utilizando unicamente los tweets en idiomas que nos interesan
     df_x = df_twitter[(df_twitter['Lang']=='en') 
-            | (df_twitter['Lang']=='es') 
-            | (df_twitter['Lang']=='fr') 
-            | (df_twitter['Lang']=='pl')
-            | (df_twitter['Lang']=='pt')]
+                            | (df_twitter['Lang']=='es') 
+                            | (df_twitter['Lang']=='fr') 
+                            | (df_twitter['Lang']=='pl')
+                            | (df_twitter['Lang']=='pt')]
     
     #contingency table para el chi-square test
     contingency= pd.crosstab(df_x['Lang'], df_x['Sent'])
@@ -508,9 +715,9 @@ def treatment(data_googlemaps,data_twitter):
     #p-value
     print(p) #p-value < 0.05 significa que, con un nivel de confianza del 95%, el senimiento no es independiente del idioma
     # conclusion: existen diferentes valoraciones de la app en diferentes paises/idiomas
-    if p <= 0.05:
-        print('There is evidence that opinions vary across countries')
-    else: print('The opinion about'& x & ' is homogeneous across countries')
+    # if p <= 0.05:
+    #     print('There is evidence that opinions vary across countries')
+    # else: print('The opinion about'& x & ' is homogeneous across countries')
     
     
     ### SUBSETS STATS ###
@@ -533,89 +740,87 @@ def treatment(data_googlemaps,data_twitter):
     popxsent = df_x[['influence', 'Sent']].groupby(['Sent']).mean()
     popxsent
     
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig8 =  urllib.parse.quote(string)
     
-    ############################## Plot a map ######################################
-    
-    key = keys.oauth_maps()
-    
-    # # initialize Nominatim API
-    # geolocator = Nominatim(user_agent="geoapiExercises")
-    
-    
-    # city = []
-    # state = []
-    # country = []
-    # zipcode = []
+    #############################################################################
     
     
-    # for row in range(len(df_googlemaps)):
-    #     # Latitude & Longitude input
-    #     Latitude = row['Latitude'].astype(str)
-    #     Longitude = row['Longitud'].astype(str)
+    #************************  Tweets por dia? ******************************
     
-    #     location = geolocator.reverse(Latitude+","+Longitude)
-      
-    #     address = location.raw['address']
-    #     city.append(address.get('city', ''))
-    #     state.append(address.get('state', ''))
-    #     country.append(address.get('country', ''))
-    #     zipcode.append(address.get('postcode'))
+    df_time = df_twitter
+    df_time['Year'] = 0
+    df_time['Month'] = 0
+    df_time['Day'] = 0
     
-    # df_googlemaps['City'] = city
-    # df_googlemaps['State'] = state
-    # df_googlemaps['Country'] = country
-    # df_googlemaps['Zipcode'] = zipcode
+    for row in range(len(df_time)):
+        df_time['Year'][row] = (str(df_time['created_at'][row])).split('-')[0]
+        df_time['Month'][row]= (str(df_time['created_at'][row])).split('-')[1]
+        df_time['Day'][row]  = ((str(df_time['created_at'][row])).split('-')[2]).split('T')[0]
     
-    
-    
-    lat, lon = 0, 0
-    bokeh_width, bokeh_height = 1000,800
-    
-    gmaps.configure(api_key=key["API_key"])
-    df_googlemaps['Radius'] = df_googlemaps['Total_Ratings']/1
-    
-    def plot(lat, lng, zoom=2, map_type='roadmap'):
-        gmap_options = GMapOptions(lat=lat, lng=lng, 
-                    map_type=map_type, zoom=zoom)
-    
-        hover = HoverTool(
-            tooltips = [
-                ('Name', '@Name'),
-                ('Rating', '@Rating{0.0} stars'), 
-                ('Total_Ratings', '@Total_Ratings reviews'), 
-                ]
-        )
-        p = gmap(key["API_key"], gmap_options, title='Mundo', 
-          width=bokeh_width, height=bokeh_height,tools=[hover,'reset','wheel_zoom','pan'])
         
-        source = ColumnDataSource(df_googlemaps)
-        center = p.circle('Longitud', 'Latitud', size='Radius', alpha=0.5, color='red',source=source)
-        show(p)
-        return p
+    df_time = df_time.groupby(["Year","Month","Day"],as_index=False,sort=True)['id'].count()
+    df_time['Date'] = df_time["Year"].map(str) + "-" + df_time["Month"].map(str) + "-" + df_time["Day"].map(str) 
     
-    p = plot(lat, lon)
+    colors = ["darkred", "firebrick", "indianred", "lightcoral","salmon", "mistyrose"]
+    
+    dias = df_time['Date'].unique().tolist()
+    tweets_dia = []
+    for dia in dias: 
+        tweets_dia.append(int(df_time[df_time['Date']==dia]['id'].to_string(index=False)))
+    
+    fig, ax = plt.subplots()
+    ax.set_ylabel('Nº Tweets')
+    ax.set_xlabel('Days')
+    
+    def autolabel(rects):
+        for idx,rect in enumerate(bar_plot):
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                    tweets_dia[idx],
+                    ha='center', va='bottom', rotation=0, color='darkred',weight='bold')
+    
+    bar_plot= ax.bar(dias, tweets_dia, color="salmon", width=1/len(dias))
+    autolabel(bar_plot)
+        
+    limit = max(tweets_dia)
+    plt.ylim(0,1.5*limit)
+    
+    plt.title("Tweets per day", 
+              fontdict={'family': 'serif', 
+                        'color' : 'darkred',
+                        'weight': 'bold',
+                        'size': 18})
+    #plt.show()
+    
+    fig = plt.gcf()
+    #convert graph into dtring buffer and then we convert 64 bit code into image
+    buf = io.BytesIO()
+    fig.savefig(buf,format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri_fig9 =  urllib.parse.quote(string)
+   
+    
+    
 
-#############################################################################
-    
-  
-    
+    return df_twitter_3_most_important, uri_fig1, uri_fig2, uri_fig3, uri_fig4, uri_fig5, \
+        uri_fig6, uri_fig7, uri_fig8, uri_fig9, uri_fig, percentage_positives, percentage_neutrals, percentage_negatives
     
     
-    # prueba = df_twitter[df_twitter['Tweet'].str.contains("trust")]
-    # list_reviews = df_googlemaps['Reviews'].tolist()
-    # for review in list_reviews:
-    #     for comentary in review:
-    #         print(comentary['author_name'])
-        
     
     
-    # prueba = sia.polarity_scores(df_twitter['Tweet'][0])['neg']
     
-        
-    # df_lang = df_twitter['Lang'].value_counts()
     
-    # hist = df_lang.hist()  
-
-
-        
+    
+    
+    
+    
+    
+    
     
