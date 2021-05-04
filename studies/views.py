@@ -124,40 +124,6 @@ def EstudioCreate(request):
                                                                 ,neu_sen=percentage_neutrals,pos_sen=percentage_positives
                                                                 ,sen_predominant = sen_predominante)
                 
-                '''
-                #intentamos guardar el estudio
-                empresa = request.POST.get('fintech','')
-                languaje= request.POST.get('lenguaje','')
-                
-                empresa = str(empresa)
-                languaje = str(languaje)
-
-                #Llamamos a la función para que edite el nombre
-                googlemaps,tweets = collectData(empresa,languaje)
-                #Llamada a la funcion de tratamiento
-                #Devuelva los tres tweets mas relevantes
-                count = 0
-                data_obj = form.save()
-                
-                #Guardado de los tweets en la base de datoss
-                for tweet in tweets:
-                    if 'https://t.co/' in tweet.text :
-                        tweet_obj = Tweet(text=tweet.text[:-23],retweets=tweet.retweet_count, 
-                            quotes=0,replies=0,placeID=0, created=tweet.created_at,likes= tweet.favorite_count,
-                            username=tweet.author.name, picture=tweet.author.profile_image_url_https,
-                            url=tweet.text[len(tweet.text)-23:])
-                    else:
-                        tweet_obj = Tweet(text=tweet.text,retweets=tweet.retweet_count, 
-                            quotes=0,replies=0,placeID=0, created=tweet.created_at,likes= tweet.favorite_count,
-                            username=tweet.author.name, picture=tweet.author.profile_image_url_https)
-                    print ('\nNuevo tweet\n',tweet.text)
-                    print ('\nURL\n',tweet.text[len(tweet.text)-23:])
-                     
-                    tweet_obj.save()
-                    data_obj.tweets.add(tweet_obj)
-                uri = makePlot()
-                Estudio.objects.filter(pk=data_obj.pk).update(graph1=uri)
-                '''
                 return redirect(reverse('estudios:estudios')+"?ok")
             except Exception as e:
                 print('El error es: ',e)
