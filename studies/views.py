@@ -7,11 +7,11 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
 from .models import Estudio, Tweet, Review, Category
 from .forms import EstudioForm
-from .funciones import collectData, dataTreatment
+from .funciones import collectData #, dataTreatment
 from django import forms
 import time
 import sys
-
+import threading
 
 class EstudioListView(ListView):
     model = Estudio
@@ -41,8 +41,6 @@ class EstudioDetailView(DetailView):
     #Funcion para editar el conetexto que se le pasa a la web
     def get_context_data(self, **kwargs):
         context = super(EstudioDetailView, self).get_context_data(**kwargs)
-        uri = makePlot()
-        context['data'] = uri
         return context
 
 
@@ -54,7 +52,6 @@ class EstudioUpdate(UpdateView):
     def get_form(self, form_class=None):
          form = super().get_form(form_class)
          form.fields['fintech'].widget = forms.HiddenInput()
-         form.fields['lenguaje'].widget = forms.HiddenInput()
          return form
 
     def get_success_url(self):
@@ -78,52 +75,21 @@ def EstudioCreate(request):
         form = EstudioForm(request.POST)
         if form.is_valid():
             try:
+
                 #intentamos guardar el estudio
                 empresa = request.POST.get('fintech','')
-                languaje= request.POST.get('lenguaje','')
                 
                 empresa = str(empresa)
-                languaje = str(languaje)
-                #Llamamos a la función para que edite el nombre
-                googlemaps,tweets, autores = collectData(empresa)
-                
+
                 data_obj = form.save()
-                print('obtencion exitosa')
-                df_twitter_3_most_important, uri_fig1, uri_fig2, uri_fig3, uri_fig4, uri_fig5,uri_fig6, uri_fig7, uri_fig8, uri_fig9,uri_fig10,percentage_positives, percentage_neutrals, percentage_negatives = dataTreatment(googlemaps,tweets,autores)
-                
-                
-                sen_predominante = ""
+                # Llamamos a la función para que edite el nombre
 
-                if(percentage_negatives > percentage_neutrals + percentage_positives):
-                    sen_predominante = "negative"
-                elif(percentage_neutrals > percentage_negatives + percentage_positives):
-                    sen_predominante = "neutral"
-                elif(percentage_positives > percentage_negatives + percentage_neutrals):
-                    sen_predominante = "positive"
-                for x in range(3):
-                    tweet_obj = Tweet(text=df_twitter_3_most_important.loc[ x , ['Tweet'] ].values[0],
-                                        created = df_twitter_3_most_important.loc[ x , ['created_at'] ].values[0],
-                                        likes =df_twitter_3_most_important.loc[ x , ['Likes'] ].values[0],
-                                        retweets= df_twitter_3_most_important.loc[ x , ['Retweets'] ].values[0],
-                                        replies = df_twitter_3_most_important.loc[ x , ['Replies'] ].values[0],
-                                        neg_sen =df_twitter_3_most_important.loc[ x , ['Negative_sentiment'] ].values[0]*100,
-                                        neu_sen =df_twitter_3_most_important.loc[ x , ['Neutral_sentiment'] ].values[0]*100,
-                                        pos_sen =df_twitter_3_most_important.loc[ x , ['Positive_sentiment'] ].values[0]*100,
-                                        username = df_twitter_3_most_important.loc[ x , ['Author_name'] ].values[0],
-                                        picture = df_twitter_3_most_important.loc[ x , ['Author_image'] ].values[0], 
-                                        name= df_twitter_3_most_important.loc[ x , ['Author_name'] ].values[0],
-                                        quotes=0,
-                                        placeID=0)
-                    #print(tweet_obj.neg_sen)
-                    tweet_obj.save()
-                    data_obj.tweets.add(tweet_obj)
+                t = threading.Thread(target=collectData, args=[empresa, data_obj.pk])
+                t.setDaemon(True)
+                t.start()
 
-                Estudio.objects.filter(pk=data_obj.pk).update(graph1=uri_fig1,graph2=uri_fig2,graph3=uri_fig3,
-                                                                graph4=uri_fig4,graph5=uri_fig5,graph6=uri_fig6,graph7=uri_fig7
-                                                                ,graph8=uri_fig8,graph9=uri_fig9,graph10=uri_fig10,neg_sen=percentage_negatives
-                                                                ,neu_sen=percentage_neutrals,pos_sen=percentage_positives
-                                                                ,sen_predominant = sen_predominante)
-                
+                print('sigue sin parar la vaina')
+
                 return redirect(reverse('estudios:estudios')+"?ok")
             except Exception as e:
                 print('El error es: ',e)

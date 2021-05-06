@@ -23,7 +23,7 @@ def contactFormView(request):
             content = request.POST.get('content','')
             email_subject = '¡Hemos recibido tu mensaje!'
             email_body = "De {} <{}>\n\n{}".format(name,email,content)
-            email_sender = 'carlos10muliterno@gmail.com'
+            email_sender = 'fintechsanalyzer@gmail.com'
             print(name,email,content)
             try:
                 #intentamos enviar el email, si es exitoso se informa al usuario

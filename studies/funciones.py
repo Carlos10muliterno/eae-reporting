@@ -5,11 +5,40 @@ Created on Sat Apr 24 18:33:02 2021
 @author: Xabi
 """
 
-def collectData(busqueda):
+def collectData(busqueda,pk):
     from . import keys
     import requests
     import json
+    import sys, os
+    from nltk.sentiment import SentimentIntensityAnalyzer
+    # import nltk
+
+    import pandas as pd
+    import gmaps
+    from . import keys
+
+    from bokeh.io import show
+    from bokeh.plotting import gmap
+    from bokeh.models import GMapOptions
+    from bokeh.models import ColumnDataSource
+    from bokeh.models import HoverTool
+
+    import numpy as np
+    from geopy.geocoders import Nominatim
+    import matplotlib.pyplot as plt
+
+    import nltk
+
+    from nltk import tokenize
+    from nltk.tokenize import word_tokenize, sent_tokenize
+    from nltk.corpus import stopwords
+    from nltk.probability import FreqDist
+
+    import io
+    import urllib, base64
+    from .models import Estudio, Tweet, Review, Category
     
+    print('\n\nComenzamos con el procesado\n\n')
     ########################### Google Maps Data ##################################
     
     ##--------Variables and functions--------##
@@ -45,7 +74,7 @@ def collectData(busqueda):
     
     ##--------Place Details--------##
     
-    list_details = []
+    data_googlemaps = []
     required_params_details = {"fields": "name,geometry,rating,review,user_ratings_total",
                                 "api_key": key["API_key"]
                                 }
@@ -55,11 +84,11 @@ def collectData(busqueda):
         
         response_details=connect_to_endpoint(search_url_details)
         if json.loads(response_details.text)['status'] == "OK":
-            list_details.append(json.loads(response_details.text)['result'])
+            data_googlemaps.append(json.loads(response_details.text)['result'])
     
     # Eliminamos registros que no tengan la palabra deseada
     
-    list_details = [item for item in list_details if busqueda in item['name'].lower()]
+    data_googlemaps = [item for item in data_googlemaps if busqueda in item['name'].lower()]
         
        
     ########################## Twitter data #####################################
@@ -88,17 +117,17 @@ def collectData(busqueda):
     ##--------Twitter API Call--------##
     
     headers = create_headers(bearer_token)
-    list_of_tweets = []
-    list_of_authors = []
+    data_twitter = []
+    autores = []
     
     while (count<1500):
         if count == 0:
             request_url     = "https://api.twitter.com/2/tweets/search/recent?query="+ busqueda + "&tweet.fields=" + "created_at,text,public_metrics,lang,geo"+"&max_results=" + str(ntweets) +"&expansions=author_id&user.fields=name,username,profile_image_url"
             json_response_twitter = connect_to_endpoint_twitter(request_url, headers)
             for tweet in json_response_twitter['data']:    
-                list_of_tweets.append(tweet)
+                data_twitter.append(tweet)
             for author in json_response_twitter['includes']['users']:
-                list_of_authors.append(author)
+                autores.append(author)
             count += ntweets
             
             
@@ -106,47 +135,11 @@ def collectData(busqueda):
             request_url     = "https://api.twitter.com/2/tweets/search/recent?query="+ busqueda + "&tweet.fields=" + "created_at,text,public_metrics,lang,geo"+ "&max_results=" + str(ntweets)+"&expansions=author_id&user.fields=name,username,profile_image_url" + "&next_token="+ json_response_twitter['meta']['next_token']
             json_response_twitter = connect_to_endpoint_twitter(request_url, headers)
             for tweet in json_response_twitter['data']:    
-                list_of_tweets.append(tweet)
+                data_twitter.append(tweet)
             for author in json_response_twitter['includes']['users']:
-                list_of_authors.append(author)
+                autores.append(author)
             count += ntweets
 
-    return list_details, list_of_tweets, list_of_authors
-
-
-def dataTreatment(data_googlemaps,data_twitter,autores):    
-
-    import json
-    import sys, os
-    from nltk.sentiment import SentimentIntensityAnalyzer
-    # import nltk
-    
-    import pandas as pd
-    import gmaps
-    from . import keys
-    
-    from bokeh.io import show
-    from bokeh.plotting import gmap
-    from bokeh.models import GMapOptions
-    from bokeh.models import ColumnDataSource
-    from bokeh.models import HoverTool
-    
-    import numpy as np
-    from geopy.geocoders import Nominatim
-    import matplotlib.pyplot as plt
-    
-    import nltk
-    # nltk.download('vader_lexicon')
-    # nltk.download('punkt')
-    nltk.download('stopwords')
-    
-    from nltk import tokenize
-    from nltk.tokenize import word_tokenize, sent_tokenize
-    from nltk.corpus import stopwords
-    from nltk.probability import FreqDist
-    
-    import io
-    import urllib, base64
     
     plt.switch_backend('agg')
     df_googlemaps= pd.DataFrame(data_googlemaps)
@@ -809,9 +802,43 @@ def dataTreatment(data_googlemaps,data_twitter,autores):
     
     
 
-    return df_twitter_3_most_important, uri_fig1, uri_fig2, uri_fig3, uri_fig4, uri_fig5, \
-        uri_fig6, uri_fig7, uri_fig8, uri_fig9, uri_fig, percentage_positives, percentage_neutrals, percentage_negatives
-    
+    sen_predominante = ""
+
+    if (percentage_negatives > percentage_neutrals + percentage_positives):
+        sen_predominante = "negative"
+    elif (percentage_neutrals > percentage_negatives + percentage_positives):
+        sen_predominante = "neutral"
+    elif (percentage_positives > percentage_negatives + percentage_neutrals):
+        sen_predominante = "positive"
+
+    data_obj = Estudio.objects.get(pk=pk)
+    for x in range(3):
+        tweet_obj = Tweet(text=df_twitter_3_most_important.loc[x, ['Tweet']].values[0],
+                          created=df_twitter_3_most_important.loc[x, ['created_at']].values[0],
+                          likes=df_twitter_3_most_important.loc[x, ['Likes']].values[0],
+                          retweets=df_twitter_3_most_important.loc[x, ['Retweets']].values[0],
+                          replies=df_twitter_3_most_important.loc[x, ['Replies']].values[0],
+                          neg_sen=df_twitter_3_most_important.loc[x, ['Negative_sentiment']].values[0] * 100,
+                          neu_sen=df_twitter_3_most_important.loc[x, ['Neutral_sentiment']].values[0] * 100,
+                          pos_sen=df_twitter_3_most_important.loc[x, ['Positive_sentiment']].values[0] * 100,
+                          username=df_twitter_3_most_important.loc[x, ['Author_name']].values[0],
+                          picture=df_twitter_3_most_important.loc[x, ['Author_image']].values[0],
+                          name=df_twitter_3_most_important.loc[x, ['Author_name']].values[0],
+                          quotes=0, placeID=0)
+        tweet_obj.save()
+        data_obj.tweets.add(tweet_obj)
+
+    Estudio.objects.filter(pk=pk).update(graph1=uri_fig1, graph2=uri_fig2, graph3=uri_fig3,
+                                         graph4=uri_fig4, graph5=uri_fig5, graph6=uri_fig6, graph7=uri_fig7
+                                         ,graph8=uri_fig8, graph9=uri_fig9, graph10=uri_fig,
+                                         neg_sen=percentage_negatives
+                                         ,neu_sen=percentage_neutrals
+                                         ,pos_sen=percentage_positives
+                                         , sen_predominant=sen_predominante
+                                         , completed=True
+                                         , success=True)
+
+    print('\n\n\nPROCESAMIENTO TERMINADO EN EL BACKEND\n\n\n')
     
     
     

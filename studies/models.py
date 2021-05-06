@@ -79,7 +79,8 @@ class Estudio(models.Model):
     graph8 = models.TextField(blank=True, null=True)
     graph9 = models.TextField(blank=True, null=True)
     graph10 = models.TextField(blank=True, null=True)
-    success = models.BooleanField(default=True)
+    completed = models.BooleanField(default=False)
+    success = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "estudio"
