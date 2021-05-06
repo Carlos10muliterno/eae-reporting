@@ -22,8 +22,20 @@
     {% for estudio in category.get_estudios.all|dictsort:"id" reversed %}
       <div class="row mt-3 mb-3">
         <div class="col-md-9 mx-auto">
+        {% if estudio.completed and estudio.success%}
           <a href="{% url 'estudios:estudio' estudio.id estudio.title|slugify %}" class="mb-4 text-center text-dark display-3">{{estudio.fintech}}</a>
           <h3>{{estudio.title}}</h3>
+        {%elif not estudio.success and estudio.completed%}
+          <p class="mb-4 text-muted display-3">{{estudio.fintech}}</a>
+          <h3>{{estudio.title}}</h3>
+          <p class="mb-4 text-white bg-danger">Ha fallado, lo sentimos mucho prueba a realizar de nuevo el estudio</p>
+        {%else%}
+          <p class="mb-4 text-muted display-3">{{estudio.fintech}}</a>
+          </div>
+          <div class="col-md-9 mx-auto">
+          <h3>{{estudio.title}}</h3>
+          <p class="mb-4 bg-warning">El estudio esta siendo procesado</p>          
+        {%endif%}  
           <div>
             <p>{{estudio.content|striptags|safe|truncatechars:"200"}}</p>
             {% if request.user.is_authenticated %}
