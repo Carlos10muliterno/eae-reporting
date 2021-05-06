@@ -26,10 +26,12 @@
           <h3>{{estudio.title}}</h3>
           <div>
             <p>{{estudio.content|striptags|safe|truncatechars:"200"}}</p>
+            {% if request.user.is_authenticated %}
             <p>
                 <a class="btn btn-warning btn-sm" href="{% url  'estudios:update' estudio.id %}">Editar información del estudio</a>
                 <a class="btn btn-danger btn-sm" href="{% url  'estudios:delete' estudio.id %}"> Borrar el estudio</a>
             </p>
+            {%endif%}
           </div>
         </div>
       </div>

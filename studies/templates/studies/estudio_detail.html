@@ -99,7 +99,8 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
         <h2 class="section-heading mb-4">Descripción del estudio</h2>
         <div>
           {{estudio.content|safe}}
-          {% if request.user.is_staff %}
+          
+          {% if request.user.is_authenticated %}
             <p><a class="btn btn-warning btn-sm" href="{% url 'estudios:update' estudio.id %}">Editar titulo y descripción del estudio</a></p>
           {% endif %}
             <a class="btn btn-success" href="{% url  'estudios:pdf' estudio.id %}"> Descargar en PDF</a>
@@ -334,7 +335,7 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
         <hr>
         <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">
         {% for category in estudio.categories.all %}
-          <a href="{% url 'posts:category' category.id %}" class="link">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
+          <a href="{% url 'estudios:category' category.id %}" class="link">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
         {% endfor %}
         </h4>
         
