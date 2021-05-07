@@ -102,16 +102,55 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
           
           {% if request.user.is_authenticated %}
             <p><a class="btn btn-warning btn-sm" href="{% url 'estudios:update' estudio.id %}">Editar titulo y descripción del estudio</a></p>
-          {% endif %}
+          {% elif estudio.success and estudio.completed %}
             <a class="btn btn-success" href="{% url  'estudios:pdf' estudio.id %}"> Descargar en PDF</a>
+          {% endif %}
         </div>
       </div>
    </div>
-   {% if not estudio.success %}
+   {% if not estudio.success and estudio.completed%}
     <div class = "row mt-4">
       <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+        {% if estudio.error == "twitter" %}
+          <p>Errro al obtener los tweets, las causas pueden ser:</p>
+            <ul>
+              <li>No hay tweets suficientes para relaizar el estudio</li>
+              <li>Error de conexión con la API de Twitter</li>
+            </ul>  
+        {% elif estudio.error == "maps" %}
+          <p>Errro al obtener la información de google maps, las causas pueden ser:</p>
+            <ul>
+              <li>No hay información suficientes para relaizar el estudio</li>
+              <li>Error de conexión con la API de Google Maps</li>
+            </ul> 
+        {% elif estudio.error == "data" %}
+            <p>Errro al obtener al generar las gráficas, las causas pueden ser:</p>
+              <ul>
+                <li>Los datos obtenidos no son suficientes para relaizar los procesamientos necesarios</li>
+                <li>Datos dañados</li>
+              </ul> 
+        {%else%}
+            <p>Hemos tenido un error inesperado, por favor vuevle a intentar realizar el estudio. Si el error persiste ponte en contacto con nosotros</p>
+            <a href = "{% url 'contact' %}" class = "btn btn-sm btn-primary">Contactanos</a>
+        {%endif%}
+          <!-- https://giphy.com/gifs/crying-2WxWfiavndgcM -->
+          <img src="{% static 'pages/img/sad.gif' %}" class="img-fluid rounded mx-auto d-block" alt="Lo sentimos" >
+          <h4>
+          ¡Hemos pensado que te pueden interesar estudios sobre empresas de sectores similares!
+          </h4>
+        </div>
+        <hr>
+        <h2 class="col-xs-12 col-md-12 col-lg-12  mb0">
+        {% for category in estudio.categories.all %}
+          <a href="{% url 'estudios:category' category.id %}" class="link">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        </h2>
+    </div>
+   {% elif not estudio.success and not estudio.completed%}
+   <div class = "row mt-4">
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0">
           <h2>
-          Lo sentimos pero no hemos podido realizar el estudio que nos has pedido...ha habido un error en {estudio.error}
+            El report se esta procesando, pronto estará listo
           </h2>
           <!-- https://giphy.com/gifs/crying-2WxWfiavndgcM -->
           <img src="{% static 'pages/img/sad.gif' %}" class="img-fluid rounded mx-auto d-block" alt="Lo sentimos" >
@@ -218,17 +257,17 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
       <div>
       <p>Como puede observar el mayor porcentaje de los Tweets es:</p>
       
-      {% if estudio.sen_predominant == "negative" %}
-        <p><b>NEGATIVO</b>, la opinión de los usuarios mayoritariamente es mala, tienen una sensación negativa acerca del producto</p>
-      {% elif estudio.sen_predominant == "neutral"  %}
-        <p><b>NEUTRAL</b>, la sensación que tienen los clientes no es ni positiva ni negativa, podríamos hablar de cierta indiferencia</p>
-        <hb>
-      {% elif estudio.sen_predominant == "positive"  %}
-        <p><b>POSITIVO</b>, la opinión de los usuarios mayoritariamente es buena, tienen una sensación positiva acerca del producto</p>
-        <hb>
-      {%else%}
-        <p>No hay un valor claro</p>
-      {% endif%}
+        {% if estudio.sen_predominant == "negative" %}
+          <p><b>NEGATIVO</b>, la opinión de los usuarios mayoritariamente es mala, tienen una sensación negativa acerca del producto</p>
+        {% elif estudio.sen_predominant == "neutral"  %}
+          <p><b>NEUTRAL</b>, la sensación que tienen los clientes no es ni positiva ni negativa, podríamos hablar de cierta indiferencia</p>
+          <hb>
+        {% elif estudio.sen_predominant == "positive"  %}
+          <p><b>POSITIVO</b>, la opinión de los usuarios mayoritariamente es buena, tienen una sensación positiva acerca del producto</p>
+          <hb>
+        {%else%}
+          <p>No hay un valor claro</p>
+        {% endif%}
       </div>
       <!--Fin del área de la primera gráfica-->
 
