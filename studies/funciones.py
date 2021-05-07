@@ -42,7 +42,7 @@ def collectData(busqueda,pk):
     try:
     
         print('\n\nComenzamos con el procesado\n\n')
-        error = 'Maps'
+        error = 'maps'
         ########################### Google Maps Data ##################################
         
         ##--------Variables and functions--------##

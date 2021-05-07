@@ -56,7 +56,7 @@ class Category(models.Model):
 
 class Estudio(models.Model):
     title = models.CharField(verbose_name="Título", max_length=200)
-    fintech = models.CharField(verbose_name="Nombre de la Fintech", max_length=50,default='None')
+    fintech = models.CharField(verbose_name="Nombre de la Fintech", max_length=50)
     #lenguaje = models.CharField(max_length=10,choices=leng_choices,default='es',verbose_name='Lenguaje de estudio de tweets')
     content = RichTextField(verbose_name="Contenido")
     #Definimos el nombre de la relacion para usarla en el HTML de category e inyectar los posts
