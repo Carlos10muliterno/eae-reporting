@@ -88,7 +88,7 @@
       }
     </style>
   </head>
-
+{% load static %}
 <!--
 CSS y HTML de los tweets obtenido de:
 https://www.bootdey.com/snippets/view/Latest-Tweet 
@@ -119,14 +119,52 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
         </div>
       </div>
    </div>
-   {% if not estudio.success %}
+   {% if not estudio.success and estudio.completed%}
     <div class = "row mt-4">
       <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+        {% if estudio.error == "twitter" %}
+          <p>Errro al obtener los tweets, las causas pueden ser:</p>
+            <ul>
+              <li>No hay tweets suficientes para relaizar el estudio</li>
+              <li>Error de conexión con la API de Twitter</li>
+            </ul>  
+        {% elif estudio.error == "maps" %}
+          <p>Errro al obtener la información de google maps, las causas pueden ser:</p>
+            <ul>
+              <li>No hay información suficientes para relaizar el estudio</li>
+              <li>Error de conexión con la API de Google Maps</li>
+            </ul> 
+        {% elif estudio.error == "data" %}
+            <p>Errro al obtener al generar las gráficas, las causas pueden ser:</p>
+              <ul>
+                <li>Los datos obtenidos no son suficientes para relaizar los procesamientos necesarios</li>
+                <li>Datos dañados</li>
+              </ul> 
+        {%else%}
+            <p>Hemos tenido un error inesperado, por favor vuevle a intentar realizar el estudio. Si el error persiste ponte en contacto con nosotros</p>
+            <a href = "{% url 'contact' %}" class = "btn btn-sm btn-primary">Contactanos</a>
+        {%endif%}
+          <!-- https://giphy.com/gifs/crying-2WxWfiavndgcM -->
+          <img src="{% static 'pages/img/sad.gif' %}" class="img-fluid rounded mx-auto d-block" alt="Lo sentimos" >
+          <h4>
+          ¡Hemos pensado que te pueden interesar estudios sobre empresas de sectores similares!
+          </h4>
+        </div>
+        <hr>
+        <h2 class="col-xs-12 col-md-12 col-lg-12  mb0">
+        {% for category in estudio.categories.all %}
+          <a href="{% url 'estudios:category' category.id %}" class="link">{{category.name}} </a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        </h2>
+    </div>
+   {% elif not estudio.success and not estudio.completed%}
+   <div class = "row mt-4">
+      <div class="col-xs-12 col-md-12 col-lg-12  mb0">
           <h2>
-          Lo sentimos pero no hemos podido realizar el estudio que nos has pedido...
+            El report se esta procesando, pronto estará listo
           </h2>
           <!-- https://giphy.com/gifs/crying-2WxWfiavndgcM -->
-          <img src="pages/img/sad.gif" class="img-fluid rounded mx-auto d-block" alt="Lo sentimos" >
+          <img src="{% static 'pages/img/sad.gif' %}" class="img-fluid rounded mx-auto d-block" alt="Lo sentimos" >
           <h4>
           ¡Hemos pensado que te pueden interesar estudios sobre empresas de sectores similares!
           </h4>
@@ -139,7 +177,7 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
         </h2>
     </div>
    {% else %}
-   <h2>Img</h2>
+   <hr>
     <div class = "row mt-4">
       <h2 class="section-heading mb-4">Estudio</h2>
       <!--Mostramos la sección de google maps-->
@@ -348,6 +386,7 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
         
       </div>
     </div>
+    <a href = "{% url 'contact' %}" >Contactanos</a>
     {% endif %}
 </main>
 </body>

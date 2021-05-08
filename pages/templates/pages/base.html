@@ -40,8 +40,20 @@
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'contact' %}">Contacto</a>
             </li>
-            <li class="nav-item">
+            
+              {% if not request.user.is_authenticated %}
+              <li class="nav-item">
                 <a class="nav-link" href="{% url 'posts:posts' %}">Blog</a>
+              </li>
+            {%else%}
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Blog</a>
+                  <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item" href="{% url 'posts:posts' %}">Entradas</a>
+                    <a class="dropdown-item" href="{% url 'posts:create' %}">Crear una nueva entrada</a>
+                  </div>
+                </li>
+              {%endif%}
             </li>
             
             {% if not request.user.is_authenticated %}
