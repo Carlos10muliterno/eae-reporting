@@ -76,6 +76,10 @@
 .nm {
     margin: 0!important;
 }
+.icon {
+    height: 20px;
+    width: 20px;
+}
 </style>
 <!--
 CSS y HTML de los tweets obtenido de:
@@ -181,16 +185,35 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
       <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">Google Maps<i class="fa fa-globe pull-right"></i></h4>
       <hr>
       <div class="col-xs-12 col-md-12 col-lg-12  mb0">
-      {% for review in estudio.reviews.all %}
-        {{review.country}}
-      {%endfor%}
+      
       <p>
       Google maps recoge reseñas de todos y cada uno de los países, además es una plataforma que los usuarios frecuentan muy a menudo para saber las diferentes opiniones de los distintos usuarios.<br> 
-      A continuación te mostramos un mapa donde puedes ver desde que ciudades los usuarios han escrito las últimas reseñas recogidas y además comprobar la valoración que han adjudicado. 
+      A continuación te mostramos una tabla donde puedes ver desde que paises los usuarios han escrito las últimas reseñas recogidas y además comprobar la valoración que han adjudicado. 
       </p>
-      </div class="col-xs-12 col-md-12 col-lg-12  mb0">
-      <div class="col-xs-12 col-md-12 col-lg-12  mb0"> Earth map (Not working yet)
-          <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph10 }}" alt="" >
+
+      <table class="table table-responsive">
+          <tr>
+            <th scope="col">País</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Valoración</th>
+          </tr>
+      {% for review in estudio.reviews.all %}
+        <tr>
+          <td>{{review.country}}{%if review.country == "España" %}
+          <img src="{% static 'pages/img/es.png' %}" class="icon" alt="" >
+          {%elif review.country == "United States" %}
+          <img src="{% static 'pages/img/usa.png' %}" class="icon" alt="" >
+          {%elif review.country == "United Kingdom" %}
+          <img src="{% static 'pages/img/uk.png' %}" class="icon" alt="" >
+          {%elif review.country == "France" %}
+          <img src="{% static 'pages/img/fr.png' %}" class="icon" alt="" >
+          {%endif%}
+          </td>
+          <td>{{review.name}}</td>
+          <td>{{review.rating}}</td>
+        </tr>
+      {%endfor%}
+      </table>
       </div>
       <!--Mostramos los tweets-->
       <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">Tweets relevantes<i class="fa fa-twitter text-info pull-right"></i></h4>
