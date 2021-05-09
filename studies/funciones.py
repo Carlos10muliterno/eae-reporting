@@ -41,9 +41,10 @@ def collectData(busqueda,pk):
 
     try:
     
-        print('\n\nComenzamos con el procesado\n\n')
+      
         error = 'maps'
-        ########################### Google Maps Data ##################################
+        
+         ########################### Google Maps Data ##################################
         
         ##--------Variables and functions--------##
         
@@ -59,26 +60,28 @@ def collectData(busqueda,pk):
         ##--------Place Search--------##
         
         required_params = {"input": busqueda,
-                        "inputtype": "textquery",
-                        "fields": "place_id",
-                        "api_key": key["API_key"]
-                        }
+                           "inputtype": "textquery",
+                           "fields": "place_id",
+                           "api_key": key["API_key"]
+                           }
         
         for country in list_countries:
-        
+            
             search_url="https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input="+ required_params["input"]+ " " + country+"&inputtype=" + required_params["inputtype"]+"&fields="+ required_params["fields"]+"&key=" + required_params["api_key"]
             
             response=connect_to_endpoint(search_url)
-            if json.loads(response.text)['status'] != "ZERO_RESULTS": 
+            
+            if json.loads(response.text)['status'] != "ZERO_RESULTS":
                 place_id = json.loads(response.text)['candidates'][0]['place_id']
                 list_place_ids.append(place_id)
+            
         
         list_place_ids = list(set(list_place_ids)) #elimina duplicados 
         
         
         ##--------Place Details--------##
         
-        data_googlemaps = []
+        list_details = []
         required_params_details = {"fields": "name,geometry,rating,review,user_ratings_total",
                                     "api_key": key["API_key"]
                                     }
@@ -87,13 +90,12 @@ def collectData(busqueda,pk):
             search_url_details="https://maps.googleapis.com/maps/api/place/details/json?place_id="+ place_id +"&fields=" + required_params_details["fields"] + "&key=" + required_params_details["api_key"]
             
             response_details=connect_to_endpoint(search_url_details)
-            if json.loads(response_details.text)['status'] == "OK":
-                data_googlemaps.append(json.loads(response_details.text)['result'])
-        
-        # Eliminamos registros que no tengan la palabra deseada
-        
-        data_googlemaps = [item for item in data_googlemaps if busqueda in item['name'].lower()]
             
+            if json.loads(response_details.text)['status'] == "OK":
+                value = json.loads(response_details.text)['result']
+                list_details.append(value)
+            
+
         error = 'twitter'
         ########################## Twitter data #####################################
         
@@ -146,7 +148,8 @@ def collectData(busqueda,pk):
 
         
         plt.switch_backend('agg')
-        df_googlemaps= pd.DataFrame(data_googlemaps)
+        
+        df_googlemaps= pd.DataFrame(list_details)
         df_twitter_v0= pd.DataFrame(data_twitter) 
         
         latitud = []
@@ -164,6 +167,8 @@ def collectData(busqueda,pk):
                                     'reviews': 'Reviews',
                                     'user_ratings_total': 'Total_Ratings',
                                     },inplace=True)
+
+        print('\n\n\n.dtypes para google maps ',df_googlemaps.dtypes)
         
         df_twitter_v0.rename(columns={ 'lang': 'Lang',
                                     'text': 'Tweet',
@@ -248,6 +253,7 @@ def collectData(busqueda,pk):
         country = []
         zipcode = []
         
+        
         for row in range(len(df_googlemaps)):
             # Latitude & Longitude input
             Latitude = str(df_googlemaps['Latitud'][row])
@@ -266,30 +272,9 @@ def collectData(busqueda,pk):
         df_googlemaps['Country'] = country
         df_googlemaps['Zipcode'] = zipcode
         
-        Radius = []
+        #Radius = []
         
-        for row in range(len(df_googlemaps)):
-            if df_googlemaps['City'][row] == '':
-                df_googlemaps['City'][row] = df_googlemaps['State'][row]
-        
-            if df_googlemaps['Total_Ratings'][row]>=0 and df_googlemaps['Total_Ratings'][row] <10:
-                pendiente=Radius.append(0.5*df_googlemaps['Total_Ratings'][row])
-                Radius.append(pendiente)
-            elif df_googlemaps['Total_Ratings'][row]>=10 and df_googlemaps['Total_Ratings'][row] <100:
-                pendiente=(1/18)*df_googlemaps['Total_Ratings'][row]+4.44
-                Radius.append(pendiente)
-            elif df_googlemaps['Total_Ratings'][row]>=100 and df_googlemaps['Total_Ratings'][row] <1000:
-                pendiente=(1/180)*df_googlemaps['Total_Ratings'][row]+9.44
-                Radius.append(pendiente)
-            elif df_googlemaps['Total_Ratings'][row]>=1000 and df_googlemaps['Total_Ratings'][row] <10000:
-                pendiente=(1/1800)*df_googlemaps['Total_Ratings'][row]+14.44
-                Radius.append(pendiente)
-            elif df_googlemaps['Total_Ratings'][row] >=10000:
-                pendiente=24
-                Radius.append(pendiente)
-                
-        Radius = list(filter(None, Radius))    
-        df_googlemaps['Radius'] = Radius        
+        #df_googlemaps['Radius'] = Radius        
         
         lat, lon = 0, 0
         bokeh_width, bokeh_height = 1000,800
@@ -323,7 +308,7 @@ def collectData(busqueda,pk):
             uri_fig =  urllib.parse.quote(string)
             return uri_fig
         
-        uri_fig = plot(lat, lon)
+        uri_fig = '' #plot(lat, lon)
         
         # fig = plt.gcf()
         # #convert graph into dtring buffer and then we convert 64 bit code into image
@@ -710,7 +695,7 @@ def collectData(busqueda,pk):
         #chi-square test
         c, p, dof, expected = chi2_contingency(contingency)
         #p-value
-        print(p) #p-value < 0.05 significa que, con un nivel de confianza del 95%, el senimiento no es independiente del idioma
+         #p-value < 0.05 significa que, con un nivel de confianza del 95%, el senimiento no es independiente del idioma
         # conclusion: existen diferentes valoraciones de la app en diferentes paises/idiomas
         # if p <= 0.05:
         #     print('There is evidence that opinions vary across countries')
@@ -816,6 +801,7 @@ def collectData(busqueda,pk):
             sen_predominante = "positive"
 
         data_obj = Estudio.objects.get(pk=pk)
+        error = 'saving_tweets'
         for x in range(3):
             tweet_obj = Tweet(text=df_twitter_3_most_important.loc[x, ['Tweet']].values[0],
                             created=df_twitter_3_most_important.loc[x, ['created_at']].values[0],
@@ -831,6 +817,28 @@ def collectData(busqueda,pk):
                             quotes=0, placeID=0)
             tweet_obj.save()
             data_obj.tweets.add(tweet_obj)
+        
+        error = 'saving_maps'
+    
+        
+        if not df_googlemaps.empty:
+            for index, row in df_googlemaps.iterrows():
+                if row['Rating'] != row['Rating']:
+                    value = 0
+                else:
+                    value =  row['Rating']
+                review_obj = Review(
+                    name= row['Name'],
+                    rating = value,
+                    rating_total = 0,
+                    longitud = row['Latitud'],
+                    latitud = row['Longitud'],
+                    country= row['Country'],
+                )
+                review_obj.save()
+                data_obj.reviews.add(review_obj)
+            
+        
         error = ''
         Estudio.objects.filter(pk=pk).update(graph1=uri_fig1, graph2=uri_fig2, graph3=uri_fig3,
                                             graph4=uri_fig4, graph5=uri_fig5, graph6=uri_fig6, graph7=uri_fig7
@@ -842,7 +850,8 @@ def collectData(busqueda,pk):
                                             , completed=True
                                             , success=True)
 
-        print('\n\n\nPROCESAMIENTO TERMINADO EN EL BACKEND\n\n\n')
+       
+    
     
     except Exception as e:
         print('El error es: ',e)
@@ -851,3 +860,4 @@ def collectData(busqueda,pk):
         print('El error se ha dado en: ',error)
         data_obj = Estudio.objects.get(pk=pk)
         Estudio.objects.filter(pk=pk).update(completed=True, success=False, error= error)
+    

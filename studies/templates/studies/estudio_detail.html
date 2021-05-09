@@ -166,6 +166,7 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
         </h2>
     </div>
    {% else %}
+   
    <hr>
     <div class = "row mt-4">
       <h2 class="section-heading mb-4">Estudio</h2>
@@ -180,6 +181,9 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
       <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">Google Maps<i class="fa fa-globe pull-right"></i></h4>
       <hr>
       <div class="col-xs-12 col-md-12 col-lg-12  mb0">
+      {% for review in estudio.reviews.all %}
+        {{review.country}}
+      {%endfor%}
       <p>
       Google maps recoge reseñas de todos y cada uno de los países, además es una plataforma que los usuarios frecuentan muy a menudo para saber las diferentes opiniones de los distintos usuarios.<br> 
       A continuación te mostramos un mapa donde puedes ver desde que ciudades los usuarios han escrito las últimas reseñas recogidas y además comprobar la valoración que han adjudicado. 
@@ -188,7 +192,6 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
       <div class="col-xs-12 col-md-12 col-lg-12  mb0"> Earth map (Not working yet)
           <img class = "img-fluid" src="data:image/png;base64,{{ estudio.graph10 }}" alt="" >
       </div>
-
       <!--Mostramos los tweets-->
       <h4 class="col-xs-12 col-md-12 col-lg-12  mb0">Tweets relevantes<i class="fa fa-twitter text-info pull-right"></i></h4>
       <div class="col-xs-12 col-md-12 col-lg-12  mb0">

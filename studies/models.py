@@ -27,9 +27,10 @@ class Tweet(models.Model):
     updated = models.DateTimeField(auto_now=True, verbose_name="Fecha de la última edición") #Se actualiza cada vez que cambiamos algo del portfolio asociado
 
 class Review(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Nombre")
-    rating = models.IntegerField()
-    reting_total = models.IntegerField()
+    name = models.CharField(max_length=100, verbose_name="Nombre de la sede")
+    country = models.TextField(verbose_name="País")
+    rating = models.IntegerField(blank=True,null=True)
+    rating_total = models.IntegerField()
     latitud = models.IntegerField(blank=True,null=True)
     longitud = models.IntegerField(blank=True,null=True)
     placeID = models.IntegerField(blank=True,null=True)
@@ -65,6 +66,7 @@ class Estudio(models.Model):
     created = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
     updated = models.DateTimeField(auto_now=True, verbose_name="Fecha de edición")
     tweets = models.ManyToManyField(Tweet, verbose_name="Tweet", related_name="get_tweets")
+    reviews = models.ManyToManyField(Review, verbose_name="Review", related_name="get_reviews")
     sen_predominant = models.CharField(blank=True, null=True, max_length=8)
     neu_sen = models.FloatField(blank=True, null=True)
     pos_sen = models.FloatField(blank=True, null=True)
