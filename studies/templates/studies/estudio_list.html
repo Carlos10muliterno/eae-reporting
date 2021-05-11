@@ -56,7 +56,6 @@
               {% if request.user.is_authenticated and estudio.completed and estudio.success %}
                 <a class="btn btn-warning btn-sm" href="{% url  'estudios:update' estudio.id %}">Editar información del estudio</a>
                 <a class="btn btn-danger btn-sm" href="{% url  'estudios:delete' estudio.id %}"> Borrar el estudio</a>
-                <a class="btn btn-success btn-sm" href="{% url  'estudios:pdf' estudio.id %}"> Descargar en PDF</a>
               {%elif not estudio.success and estudio.completed %}
                 <a class="btn btn-danger btn-sm" href="{% url  'estudios:delete' estudio.id %}"> Borrar el estudio</a>
               {%endif%}

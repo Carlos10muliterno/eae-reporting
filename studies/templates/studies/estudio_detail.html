@@ -106,8 +106,6 @@ https://www.bootdey.com/snippets/view/Latest-Tweet
           
           {% if request.user.is_authenticated %}
             <p><a class="btn btn-warning btn-sm" href="{% url 'estudios:update' estudio.id %}">Editar titulo y descripción del estudio</a></p>
-          {% elif estudio.success and estudio.completed %}
-            <a class="btn btn-success" href="{% url  'estudios:pdf' estudio.id %}"> Descargar en PDF</a>
           {% endif %}
         </div>
       </div>
